@@ -1,9 +1,8 @@
-# Everwall - Plataforma de Cuadrícula de Píxeles
+# Everwall - Plataforma de Cuadricula de Pixeles
 
 ## Estructura del Proyecto
 
 backend/
-│
 ├── app/
 │ ├── init.py
 │ ├── asgi.py
