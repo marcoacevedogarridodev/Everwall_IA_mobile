@@ -265,11 +265,11 @@ class PixelViewSet(viewsets.GenericViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            session = PixelPurchaseSession.objects.get(session_id=session_id)
+            session = PixelPurchaseSession.objects.get(session_id=session_id, is_completed=False)
         except PixelPurchaseSession.DoesNotExist:
             return Response({
                 'success': False,
-                'error': 'Sesión no encontrada'
+                'error': 'Sesión no encontrada o ya completada'
             }, status=status.HTTP_404_NOT_FOUND)
 
         # Verificar pago en Stripe
@@ -364,10 +364,19 @@ class PixelViewSet(viewsets.GenericViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            # Construir query dinámicamente para evitar ValidationError si code no es UUID válido
+            query = django_models.Q(display_code=code) | django_models.Q(search_code=code)
+            
+            # Validar si code parece ser un UUID antes de agregarlo al query
+            try:
+                uuid.UUID(code)
+                query |= django_models.Q(access_code=code)
+            except (ValueError, AttributeError):
+                # No es UUID válido, solo buscar en otros campos
+                pass
+            
             pixel = Pixel.objects.get(
-                django_models.Q(display_code=code) |
-                django_models.Q(search_code=code) |
-                django_models.Q(access_code=code),
+                query,
                 status='sold',
                 moderation_status='approved'
             )
