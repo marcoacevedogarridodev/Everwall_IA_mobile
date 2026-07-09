@@ -23,6 +23,7 @@ RUN pip install --upgrade pip setuptools wheel
 
 COPY requirements.txt .
 
+
 # Deshabilitar verificación SSL solo para construcción (no recomendado para producción)
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org -r requirements.txt
 

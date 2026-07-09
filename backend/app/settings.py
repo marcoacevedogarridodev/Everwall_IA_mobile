@@ -31,7 +31,7 @@ INSTALLED_APPS = [
     # Third party apps
     'rest_framework',
     'corsheaders',
-    'drf_yasg',
+    'drf_spectacular',
 
     # Local apps
     'pixels',  # Nuestra app (renombrada de server)

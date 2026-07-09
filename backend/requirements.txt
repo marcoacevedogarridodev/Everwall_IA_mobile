@@ -1,12 +1,12 @@
 # backend/requirements.txt
 Django==5.0.3
-djangorestframework==3.14.0
+djangorestframework==3.15.2
+drf-spectacular==0.28.0
 django-cors-headers==4.3.1
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.12
 stripe==7.11.0
 openai==1.14.3
 python-dotenv==1.0.1
-Pillow==10.2.0
+Pillow==12.0.0
 django-cleanup==8.0.0
-drf-yasg==1.21.7
 python-decouple==3.8
