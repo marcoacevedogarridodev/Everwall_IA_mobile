@@ -2,6 +2,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
+from django.contrib.auth.models import User
 import uuid
 import random
 import string
@@ -54,6 +55,7 @@ class Pixel(models.Model):
     image_filename = models.CharField(max_length=255, blank=True)
 
     # Información del dueño
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='pixels')
     owner_name = models.CharField(max_length=200, blank=True)
     owner_email = models.EmailField()
     owner_message = models.TextField(max_length=500, blank=True)
@@ -90,6 +92,7 @@ class Pixel(models.Model):
             models.Index(fields=['search_code']),
             models.Index(fields=['display_code']),
             models.Index(fields=['owner_email']),
+            models.Index(fields=['owner']),
             models.Index(fields=['status', 'moderation_status']),
             models.Index(fields=['-purchased_at']),
         ]
@@ -149,6 +152,7 @@ class Pixel(models.Model):
 
 class PixelPurchaseSession(models.Model):
     """Sesión temporal de compra"""
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='purchase_sessions')
     session_id = models.CharField(max_length=100, unique=True)
     pixel_x = models.IntegerField()
     pixel_y = models.IntegerField()
@@ -165,6 +169,7 @@ class PixelPurchaseSession(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=['session_id']),
+            models.Index(fields=['owner']),
             models.Index(fields=['expires_at']),
             models.Index(fields=['payment_intent_id']),
         ]

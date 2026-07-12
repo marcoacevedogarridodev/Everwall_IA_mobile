@@ -3,6 +3,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db import transaction
@@ -50,14 +51,14 @@ class PixelViewSet(viewsets.GenericViewSet):
                 'error': 'Error al obtener estado de la grilla'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @action(detail=False, methods=['post'], parser_classes=[MultiPartParser, FormParser])
+    @action(detail=False, methods=['post'], parser_classes=[MultiPartParser, FormParser], permission_classes=[IsAuthenticated])
     def initiate_purchase(self, request):
         """
         POST /api/pixels/initiate_purchase/
-        Iniciar compra de un pixel con imágenes
+        Iniciar compra de un pixel con imágenes (requiere autenticación)
         """
         # Validar campos requeridos
-        required_fields = ['x', 'y', 'owner_email']
+        required_fields = ['x', 'y']
         for field in required_fields:
             if field not in request.data:
                 return Response({
@@ -135,16 +136,21 @@ class PixelViewSet(viewsets.GenericViewSet):
 
         # Determinar moneda
         currency = request.data.get('currency', 'CLP')
+        
+        # Use authenticated user email or allow override for gifts
+        owner_email = request.data.get('owner_email', request.user.email)
+        owner_name = request.data.get('owner_name', '')
 
-        # Crear sesión
+        # Crear sesión asociada al usuario autenticado
         session = PixelPurchaseSession.objects.create(
+            owner=request.user,
             session_id=str(uuid.uuid4()),
             pixel_x=x,
             pixel_y=y,
             images_data=moderated_images,
             image_filenames=image_filenames,
-            owner_email=request.data['owner_email'],
-            owner_name=request.data.get('owner_name', ''),
+            owner_email=owner_email,
+            owner_name=owner_name,
             owner_message=request.data.get('owner_message', ''),
             expires_at=timezone.now() + timedelta(minutes=30)
         )
@@ -175,11 +181,11 @@ class PixelViewSet(viewsets.GenericViewSet):
             }
         })
 
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def create_payment_intent(self, request):
         """
         POST /api/pixels/create_payment_intent/
-        Crear PaymentIntent de Stripe
+        Crear PaymentIntent de Stripe (requiere autenticación)
         """
         session_id = request.data.get('session_id')
         currency = request.data.get('currency', 'CLP')
@@ -191,7 +197,11 @@ class PixelViewSet(viewsets.GenericViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            session = PixelPurchaseSession.objects.get(session_id=session_id, is_completed=False)
+            session = PixelPurchaseSession.objects.get(
+                session_id=session_id,
+                is_completed=False,
+                owner=request.user  # Validate ownership
+            )
         except PixelPurchaseSession.DoesNotExist:
             return Response({
                 'success': False,
@@ -249,11 +259,11 @@ class PixelViewSet(viewsets.GenericViewSet):
                 'error': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def confirm_purchase(self, request):
         """
         POST /api/pixels/confirm_purchase/
-        Confirmar compra después del pago
+        Confirmar compra después del pago (requiere autenticación)
         """
         payment_intent_id = request.data.get('payment_intent_id')
         session_id = request.data.get('session_id')
@@ -265,7 +275,11 @@ class PixelViewSet(viewsets.GenericViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            session = PixelPurchaseSession.objects.get(session_id=session_id, is_completed=False)
+            session = PixelPurchaseSession.objects.get(
+                session_id=session_id,
+                is_completed=False,
+                owner=request.user  # Validate ownership
+            )
         except PixelPurchaseSession.DoesNotExist:
             return Response({
                 'success': False,
@@ -294,8 +308,9 @@ class PixelViewSet(viewsets.GenericViewSet):
                     else:
                         additional_images.append(saved_path)
 
-            # Crear pixel
+            # Crear pixel con owner asociado
             pixel = Pixel.objects.create(
+                owner=request.user,  # Set authenticated user as owner
                 x=session.pixel_x,
                 y=session.pixel_y,
                 main_image=main_image,
@@ -499,3 +514,61 @@ class PixelViewSet(viewsets.GenericViewSet):
             'success': True,
             'data': serializer.data
         })
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def my_pixels(self, request):
+        """
+        GET /api/pixels/my_pixels/
+        Obtener pixeles del usuario autenticado
+        """
+        pixels = Pixel.objects.filter(owner=request.user).order_by('-purchased_at')
+        serializer = PixelSerializer(pixels, many=True, context={'request': request})
+        
+        return Response({
+            'success': True,
+            'count': pixels.count(),
+            'data': serializer.data
+        })
+
+    @action(detail=False, methods=['put'], permission_classes=[IsAuthenticated])
+    def edit_pixel_content(self, request):
+        """
+        PUT /api/pixels/edit_pixel_content/
+        Editar contenido (owner_message) de un pixel
+        Requiere: pixel_id (o x, y), owner_message
+        """
+        pixel_id = request.data.get('pixel_id')
+        pixel_x = request.data.get('x')
+        pixel_y = request.data.get('y')
+        new_message = request.data.get('owner_message', '')
+        
+        try:
+            if pixel_id:
+                pixel = Pixel.objects.get(id=pixel_id, owner=request.user)
+            elif pixel_x is not None and pixel_y is not None:
+                pixel = Pixel.objects.get(x=int(pixel_x), y=int(pixel_y), owner=request.user)
+            else:
+                return Response({
+                    'success': False,
+                    'error': 'Proporciona pixel_id o coordenadas (x, y)'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            pixel.owner_message = new_message
+            pixel.save(update_fields=['owner_message', 'updated_at'])
+            
+            return Response({
+                'success': True,
+                'message': 'Contenido actualizado exitosamente',
+                'data': PixelSerializer(pixel, context={'request': request}).data
+            })
+        
+        except Pixel.DoesNotExist:
+            return Response({
+                'success': False,
+                'error': 'Pixel no encontrado o no tienes permiso para editarlo'
+            }, status=status.HTTP_403_FORBIDDEN)
+        except ValueError:
+            return Response({
+                'success': False,
+                'error': 'Coordenadas inválidas'
+            }, status=status.HTTP_400_BAD_REQUEST)
