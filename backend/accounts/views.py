@@ -91,14 +91,14 @@ class GoogleLoginView(APIView):
     def post(self, request):
         serializer = GoogleLoginSerializer(data=request.data)
         if serializer.is_valid():
-            id_token = serializer.validated_data['id_token']
+            token = serializer.validated_data['id_token']
             
             try:
                 from google.auth.transport import requests
-                from google.oauth2 import id_token
+                from google.oauth2 import id_token as oauth2_id_token
                 
                 request_obj = requests.Request()
-                payload = id_token.verify_oauth2_token(id_token, request_obj)
+                payload = oauth2_id_token.verify_oauth2_token(token, request_obj)
                 
                 if payload['iss'] not in ['https://accounts.google.com', 'accounts.google.com']:
                     raise ValueError('Token inválido')
