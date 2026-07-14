@@ -32,7 +32,7 @@ class UserSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
-    password2 = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    password2 = serializers.CharField(write_only=True, required=False, allow_blank=True, style={'input_type': 'password'})
     first_name = serializers.CharField(required=False, allow_blank=True)
     last_name = serializers.CharField(required=False, allow_blank=True)
 
@@ -42,7 +42,8 @@ class RegisterSerializer(serializers.Serializer):
         return value
 
     def validate(self, data):
-        if data.get('password') != data.get('password2'):
+        password2 = data.get('password2')
+        if password2 and data.get('password') != password2:
             raise serializers.ValidationError({"password": "Las contraseñas no coinciden."})
         
         try:
