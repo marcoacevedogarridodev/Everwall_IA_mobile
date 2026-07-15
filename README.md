@@ -1,4 +1,4 @@
-## Instalacion
+### Instalacion
 ```bash
 cd backend
 pip install -r requirements.txt
@@ -37,7 +37,7 @@ EMAIL_HOST_PASSWORD=app-password
 
 ```
 
-## API Endpoints
+### API Endpoints
 
 | Metodo | Endpoint | Descripcion |
 |--------|----------|-------------|
