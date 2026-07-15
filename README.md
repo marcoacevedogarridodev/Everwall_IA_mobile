@@ -42,7 +42,16 @@ EMAIL_HOST_PASSWORD=app-password
 
 ---
 
-## Flujos de Uso
+## API Endpoints
+
+| Metodo | Endpoint | Descripcion |
+|--------|----------|-------------|
+| GET | `/api/pixels/` | Obtener todos los pixeles |
+| GET | `/api/pixels/{id}/` | Obtener detalle de un pixel |
+| POST | `/api/pixels/{id}/purchase/` | Comprar un pixel |
+| PUT | `/api/pixels/{id}/content/` | Actualizar contenido de un pixel |
+| GET | `/api/pixels/search/` | Buscar pixeles por propietario o contenido |
+| POST | `/api/payments/webhook/` | Webhook para confirmación de pagos |
 
 ### Registro
 ```bash
@@ -56,20 +65,6 @@ POST /api/auth/register/
 }
 ```
 Se envia email de verificacion con link
-
-
-## API Endpoints
-
-| Metodo | Endpoint | Descripcion |
-|--------|----------|-------------|
-| GET | `/api/pixels/` | Obtener todos los pixeles |
-| GET | `/api/pixels/{id}/` | Obtener detalle de un pixel |
-| POST | `/api/pixels/{id}/purchase/` | Comprar un pixel |
-| PUT | `/api/pixels/{id}/content/` | Actualizar contenido de un pixel |
-| GET | `/api/pixels/search/` | Buscar pixeles por propietario o contenido |
-| POST | `/api/payments/webhook/` | Webhook para confirmación de pagos |
-
-
 
 ### Login
 ```bash
