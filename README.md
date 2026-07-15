@@ -35,9 +35,8 @@ GOOGLE_CLIENT_ID=client-id.apps.googleusercontent.com
 FRONTEND_URL=http://localhost:3000
 EMAIL_HOST_USER=email@gmail.com
 EMAIL_HOST_PASSWORD=app-password
-```
 
----
+```
 
 ## API Endpoints
 
@@ -48,7 +47,7 @@ EMAIL_HOST_PASSWORD=app-password
 | POST | `/api/pixels/{id}/purchase/` | Comprar un pixel |
 | PUT | `/api/pixels/{id}/content/` | Actualizar contenido de un pixel |
 | GET | `/api/pixels/search/` | Buscar pixeles por propietario o contenido |
-| POST | `/api/payments/webhook/` | Webhook para confirmación de pagos |
+| POST | `/api/payments/webhook/` | Webhook para confirmacion de pagos |
 
 ### Registro
 ```bash
@@ -58,7 +57,7 @@ POST /api/auth/register/
   "password": "SecurePass123!",
   "password2": "SecurePass123!",
   "first_name": "Juan",
-  "last_name": "Pérez"
+  "last_name": "Perez"
 }
 ```
 Se envia email de verificacion con link
