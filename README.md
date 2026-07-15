@@ -1,14 +1,3 @@
-## API Endpoints
-
-| Metodo | Endpoint | Descripcion |
-|--------|----------|-------------|
-| GET | `/api/pixels/` | Obtener todos los pixeles |
-| GET | `/api/pixels/{id}/` | Obtener detalle de un pixel |
-| POST | `/api/pixels/{id}/purchase/` | Comprar un pixel |
-| PUT | `/api/pixels/{id}/content/` | Actualizar contenido de un pixel |
-| GET | `/api/pixels/search/` | Buscar pixeles por propietario o contenido |
-| POST | `/api/payments/webhook/` | Webhook para confirmación de pagos |
-
 ## Instalacion Rapida
 
 ### Backend (Django)
@@ -43,9 +32,6 @@ python manage.py test accounts --verbosity=2
 # 
 # Ra
 
-====================
-====================
-
 ```
 GOOGLE_CLIENT_ID=client-id.apps.googleusercontent.com
 FRONTEND_URL=http://localhost:3000
@@ -68,6 +54,20 @@ POST /api/auth/register/
 }
 ```
 Se envia email de verificacion con link
+
+
+## API Endpoints
+
+| Metodo | Endpoint | Descripcion |
+|--------|----------|-------------|
+| GET | `/api/pixels/` | Obtener todos los pixeles |
+| GET | `/api/pixels/{id}/` | Obtener detalle de un pixel |
+| POST | `/api/pixels/{id}/purchase/` | Comprar un pixel |
+| PUT | `/api/pixels/{id}/content/` | Actualizar contenido de un pixel |
+| GET | `/api/pixels/search/` | Buscar pixeles por propietario o contenido |
+| POST | `/api/payments/webhook/` | Webhook para confirmación de pagos |
+
+
 
 ### Login
 ```bash
@@ -111,12 +111,3 @@ Authorization: Bearer <access_token>
   "owner_message": "Nuevo mensaje"
 }
 ```
-
-## Próximos Pasos (Opcionales)
-
-- [ ] Implementar 2FA (TOTP/SMS)
-- [ ] Agregar rate limiting más granular (por usuario, no solo por IP)
-- [ ] Implementar webhook de Google para re-verificación periódica
-- [ ] Crear dashboard para el usuario de ver activity log
-- [ ] Implementar revokeall-tokens endpoint
-
