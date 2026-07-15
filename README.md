@@ -31,9 +31,6 @@ python manage.py test accounts --verbosity=2
 # 
 # Ra
 
-```
-
-```bash
 GOOGLE_CLIENT_ID=client-id.apps.googleusercontent.com
 FRONTEND_URL=http://localhost:3000
 EMAIL_HOST_USER=email@gmail.com
