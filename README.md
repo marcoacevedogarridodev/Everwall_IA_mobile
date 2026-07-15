@@ -36,15 +36,41 @@ EMAIL_HOST_PASSWORD=app-password
 ```
 
 ### API Endpoints
+```
+admin/
+api/ auth/register/
+api/ auth/login/
+api/ auth/google/
+api/ auth/logout/
+api/ auth/token/refresh/
+api/ auth/me/
+api/ auth/verify-email/
+api/ auth/resend-verification/ 
+api/ auth/password-reset/ 
+api/ auth/password-reset/confirm/
+api/ auth/change-password/ 
+api/ ^pixels/confirm_purchase/
+api/ ^pixels/confirm_purchase\
+api/ ^pixels/create_payment_intent/
+api/ ^pixels/create_payment_intent\
+api/ ^pixels/edit_pixel_content/
+api/ ^pixels/edit_pixel_content\
+api/ ^pixels/grid_status/
+api/ ^pixels/grid_status\
+api/ ^pixels/initiate_purchase/
+api/ ^pixels/initiate_purchase\
+api/ ^pixels/my_pixels/
+api/ ^pixels/my_pixels\
+api/ ^pixels/recent_pixels/
+api/ ^pixels/recent_pixels\
+api/ ^pixels/search_pixel/
+api/ ^pixels/search_pixel\
+api/ ^pixels/share_pixel/
+api/ ^pixels/share_pixel\
+api/ ^pixels/stats/
+api/ ^pixels/stats\
 
-| Metodo | Endpoint | Descripcion |
-|--------|----------|-------------|
-| GET | `/api/pixels/` | Obtener todos los pixeles |
-| GET | `/api/pixels/{id}/` | Obtener detalle de un pixel |
-| POST | `/api/pixels/{id}/purchase/` | Comprar un pixel |
-| PUT | `/api/pixels/{id}/content/` | Actualizar contenido de un pixel |
-| GET | `/api/pixels/search/` | Buscar pixeles por propietario o contenido |
-| POST | `/api/payments/webhook/` | Webhook para confirmacion de pagos |
+```
 
 ### Registro
 ```bash
