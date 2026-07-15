@@ -27,8 +27,6 @@ python manage.py test accounts --verbosity=2
 # test_get_current_user ✓
 # test_protected_endpoint_without_token ✓
 # test_user_profile_created ✓
-# 
-# Ra
 
 GOOGLE_CLIENT_ID=client-id.apps.googleusercontent.com
 FRONTEND_URL=http://localhost:3000
