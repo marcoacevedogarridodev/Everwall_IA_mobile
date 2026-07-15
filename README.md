@@ -1,14 +1,3 @@
-# Everwall - Plataforma de Cuadricula de Pixeles
-
-## Tecnologias Utilizadas
-
-| Capa | Tecnologias |
-|------|-------------|
-| **Backend** | Django, Django REST Framework, SQLite, Docker, Docker Compose |
-| **Frontend** | React Native, Expo, TypeScript, Axios |
-| **Pagos** | Integración con pasarela de pagos |
-| **Moderación** | Servicio de moderación de contenido |
-
 ## API Endpoints
 
 | Metodo | Endpoint | Descripcion |
@@ -36,38 +25,33 @@ npx expo start
 cd backend
 docker-compose up --build
 
-
-
-====================
-====================
-
-
-## Instalacion
-
-### 1. Dependencias
-
-```bash
 cd backend
 .venv\Scripts\activate
 pip install -r requirements.txt --break-system-packages
-```
 
-### 3. Variables de Entorno (.env)
-
-```
-GOOGLE_CLIENT_ID=tu-client-id.apps.googleusercontent.com
-FRONTEND_URL=http://localhost:3000
-EMAIL_HOST_USER=tu-email@gmail.com
-EMAIL_HOST_PASSWORD=tu-app-password
-```
-
-### 4. Test
-
-```bash
 python manage.py test accounts
-# Resultado: Ran 6 tests in 2.0s - OK
-```
 
+python manage.py test accounts --verbosity=2
+
+# Resultado esperado:
+# test_user_registration ✓
+# test_user_login ✓
+# test_login_with_wrong_password ✓
+# test_get_current_user ✓
+# test_protected_endpoint_without_token ✓
+# test_user_profile_created ✓
+# 
+# Ra
+
+====================
+====================
+
+```
+GOOGLE_CLIENT_ID=client-id.apps.googleusercontent.com
+FRONTEND_URL=http://localhost:3000
+EMAIL_HOST_USER=email@gmail.com
+EMAIL_HOST_PASSWORD=app-password
+```
 ---
 
 ## Flujos de Uso
@@ -127,26 +111,6 @@ Authorization: Bearer <access_token>
   "owner_message": "Nuevo mensaje"
 }
 ```
----
-
-## Testing
-
-```bash
-# Run all tests
-python manage.py test accounts --verbosity=2
-
-# Resultado esperado:
-# test_user_registration ✓
-# test_user_login ✓
-# test_login_with_wrong_password ✓
-# test_get_current_user ✓
-# test_protected_endpoint_without_token ✓
-# test_user_profile_created ✓
-# 
-# Ran 6 tests in 2.0s - OK
-```
-
----
 
 ## Próximos Pasos (Opcionales)
 
