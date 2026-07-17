@@ -1,0 +1,187 @@
+# Pixel App — Mobile (Flutter)
+
+App estilo Instagram/Facebook con grilla infinita de píxeles tipo Google Maps,
+auth completo, compra de píxeles, likes, comentarios, mensajes y dark mode
+premium.
+
+## ⚠️ ANTES DE CORRER: configura tu URL real
+
+Edita `lib/config/app_config.dart` y reemplaza `apiBaseUrl` por tu dominio
+real (o pásalo por `--dart-define`, ver comentario en ese archivo). Ejemplos
+según dónde corres el backend Django:
+
+```bash
+# Backend Django local + emulador Android
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api
+
+# Backend Django local + iOS simulator / Flutter web
+flutter run --dart-define=API_BASE_URL=http://localhost:8000/api
+
+# Backend desplegado
+flutter run --dart-define=API_BASE_URL=https://tu-dominio-real.com/api
+```
+
+## ✅ Estado actual: Sprint 3 completado (Sprints 1-2 incluidos)
+
+### Sprint 3 — Grid infinita + navegación principal
+- `MainScreen`: contenedor con bottom navigation real (5 tabs: Grid, Search,
+  My Pixels, Messages, Profile) usando `IndexedStack` para preservar el
+  estado de cada tab (ej. scroll position del grid) al cambiar de pestaña.
+- `GridScreen` + `InfiniteGridWidget`: grilla con **scroll infinito vertical**,
+  columnas responsive según ancho de pantalla, carga perezosa por viewport
+  (debounced) contra `GET /pixels/grid_status/`, cache en memoria por chunk
+  vía `GridProvider`, shimmer mientras cargan imágenes, `RepaintBoundary`
+  por celda (spec 15.1).
+  - **Importante — decisión de diseño**: implementé scroll infinito vertical
+    con columnas fijas (como el mockup ASCII del spec) en vez de un canvas
+    2D libremente pannable "estilo Google Maps real". Un canvas 2D libre
+    (paneo en las 4 direcciones con zoom) es un motor bastante más grande
+    de construir — si lo necesitas de verdad, dímelo y lo hacemos como su
+    propio sprint dedicado.
+- Indicadores 🔥 (>50 likes, parpadeo suave) y ❤️ (liked by mí) en las
+  esquinas de cada celda, según spec 3.1.
+- `PixelOverlayWidget`: bottom sheet arrastrable al hacer tap/long-press en
+  un píxel — imagen grande, owner, mensaje, likes, contador de comentarios,
+  y botones Like / Comentar / Compartir (`share_plus`, ya funcional) /
+  Editar (solo si `isOwner`).
+- `GridFloatingButton`: FAB "+" (spec 3.3), listo para conectar al flujo de
+  compra del Sprint 4.
+- `ProfileScreen`: header con datos reales del usuario + logout funcional
+  (`POST /auth/logout/`). Stats/edición completas en Sprint 8.
+- Search / My Pixels / Messages: placeholders con `EmptyStateWidget`,
+  `PixelService.searchPixel()` y `getMyPixels()` ya implementados y listos
+  para conectar en el Sprint 5.
+
+### ⚠️ Verifica el formato de `/pixels/grid_status/`
+No tenía el serializer real, así que `PixelService.getGridStatus()` asume:
+- Query params: `x_min`, `x_max`, `y_min`, `y_max` (bounding box).
+- Respuesta: lista de objetos `{ id, x, y, image_url, owner_name, owner_message, likes_count, is_liked, comments_count, is_owner }`, ya sea como array directo o paginado `{ results: [...] }`.
+
+Si tu backend espera otro formato de query o de respuesta, es un ajuste
+acotado a `PixelService.getGridStatus()` y `PixelModel.fromJson()` — el
+resto de la app no se ve afectado. También pendiente: **no vi ningún
+endpoint de "like"** en las rutas que compartiste — el like hoy es
+optimista en memoria (`GridProvider.applyOptimisticLike`); en cuanto me
+pases la ruta real lo conecto de inmediato.
+
+### Sprint 2 — Autenticación 100% funcional
+- `ApiService`: cliente Dio central con interceptor de auth (Bearer token
+  automático), interceptor de **refresh automático** en 401 contra
+  `/auth/token/refresh/` con reintento transparente de la request original,
+  logging en dev, y mapeo de errores DRF a `ApiException` con mensaje legible.
+- `AuthService`: mapea 1:1 todos tus endpoints reales:
+  `register`, `login`, `google`, `logout`, `token/refresh` (interno),
+  `me`, `verify-email`, `resend-verification`, `password-reset`,
+  `password-reset/confirm`, `change-password`.
+- `AuthProvider`: estado global de sesión (`AuthStatus`), persistencia de
+  tokens en `flutter_secure_storage`, chequeo automático de sesión al abrir
+  la app (Splash llama `checkAuthStatus()` contra `/auth/me/`).
+- `StorageService`: tokens en secure storage + user cacheado en SharedPreferences.
+- Pantallas conectadas de verdad a la API:
+  - **Login** → `POST /auth/login/`
+  - **Register** → `POST /auth/register/` → navega a Verify Email
+  - **Verify Email** → reenvío (`POST /auth/resend-verification/`) + campo
+    manual de token (`POST /auth/verify-email/`) como fallback mientras no
+    hay deep links (Sprint 9)
+  - **Forgot Password** → `POST /auth/password-reset/`
+  - **Reset Password** → `POST /auth/password-reset/confirm/`
+  - **Main Screen** (placeholder, se reemplaza en Sprint 3) → confirma que
+    la sesión persiste y prueba `logout()` → `POST /auth/logout/`
+- **Google Sign-In**: el endpoint `POST /auth/google/` ya está mapeado en
+  `AuthService.googleLogin()` y `AuthProvider.googleLogin()`, pero falta
+  integrar el SDK nativo `google_sign_in` para obtener el `idToken` real
+  (el botón en Login muestra un aviso claro de esto por ahora).
+
+### ⚠️ Verifica el formato exacto de las respuestas de tu backend
+No tengo el serializer real de Django, así que asumí las convenciones más
+comunes de DRF + SimpleJWT. Dos lugares a revisar/ajustar si tu backend
+devuelve otro formato:
+
+1. **`AuthService._parseAuthResponse()`** (login/google): espera
+   `{ access, refresh, user: {...} }` o `{ tokens: { access, refresh }, user: {...} }`.
+2. **`UserModel.fromJson()`**: espera `first_name`, `last_name`, `is_verified`,
+   etc. Si tu API usa otros nombres de campo, ajusta ahí — es el único lugar
+   que lo necesita.
+
+Si me pasas un ejemplo real del JSON que devuelve `POST /auth/login/`, ajusto
+esto en 2 minutos para que calce exacto.
+
+### Sprint 1 (base)
+
+- Estructura de carpetas completa según arquitectura definida.
+- Tema global (colores, tipografía, animaciones) — `AppColors`, `AppTextStyles`, `AppAnimations`, `AppTheme`.
+- Configuración de entorno (`AppConfig`) y constantes (`AppConstants`, `ValidationConstants`).
+- Sistema de rutas nombradas con transiciones (`AppRoutes`).
+- **Splash Screen** funcional: logo con glow pulsante, fade a Login tras ~2.2s.
+- **Login Screen** con UI completa (email, password, botón gradiente, Google,
+  link a registro) y validación local. *(La conexión real a la API se activa en el Sprint 2.)*
+- `ThemeProvider` base (persistencia en SharedPreferences).
+
+La app **compila y corre** mostrando: Splash → Login.
+
+## 🚀 Cómo correrla
+
+```bash
+cd mobile
+flutter pub get
+flutter run
+```
+
+> **Nota sobre assets:** `assets/images/` y `assets/animations/` están vacías
+> (solo `.gitkeep`). El logo del Splash/Login se dibuja con un `Icon` +
+> gradiente para que la app corra sin depender de binarios. Cuando tengas
+> `logo.png` / `logo_animated.json` reales:
+> 1. Colócalos en `assets/images/` y `assets/animations/`.
+> 2. Descomenta la sección `assets:` en `pubspec.yaml`.
+> 3. Reemplaza el `_LogoMark` en `splash_screen.dart` por `Image.asset(Assets.logo)`.
+
+> **Nota sobre fuentes:** `fontFamily: 'SFProDisplay'` está declarado en
+> `theme/text_styles.dart` pero sin `.ttf` reales cae a la fuente del sistema
+> automáticamente (no rompe nada). Agrega los `.ttf` en `assets/fonts/` y
+> descomenta la sección `fonts:` en `pubspec.yaml` cuando los tengas.
+
+## 📦 Plan de Sprints
+
+| # | Alcance | Entregable |
+|---|---|---|
+| **1** ✅ | Setup, tema, config, rutas, Splash, Login (UI) | App corre: Splash → Login |
+| **2** | `ApiService` (dio + interceptors), `AuthService`, `AuthProvider`, Register/Verify/Forgot/Reset, Google Sign-In | Auth 100% funcional contra el backend |
+| **3** | `MainScreen` + bottom nav, `GridScreen`, `InfiniteGridWidget`, `GridProvider`, `PixelProvider`, `PixelModel` | Grid infinita con scroll e indicadores 🔥❤️ |
+| **4** | `PixelDetailScreen`, flujo de compra (mini-grid, upload, Stripe), `PaymentService` | Compra de píxel end-to-end |
+| **5** | `SearchScreen`, `MyPixelsScreen` | Búsqueda por ID + galería personal |
+| **6** | `ChatListScreen`, `ChatDetailScreen`, `WebsocketService`, `ChatProvider` | Mensajería pública/privada en tiempo real |
+| **7** | Sistema de likes (animación explosión), comentarios públicos/privados | Interacciones sociales completas |
+| **8** | `ProfileScreen`, `SettingsScreen`, `StorageService`, `NotificationService` (FCM) | Perfil, ajustes y push notifications |
+| **9** | Deep links, offline support (Hive + cola de acciones), Analytics | Features avanzados |
+| **10** | Tests unitarios/widget/integration, optimización de grid y tamaño de app, build final | Entregable de producción |
+
+Cada sprint se entrega como un set de archivos nuevos/editados que se integran
+sobre el código ya corriendo, sin romper lo anterior.
+
+## 🔌 Contrato de API (referencia rápida — Sprint 2)
+
+```
+POST /api/auth/login/                     { email, password }
+POST /api/auth/register/                  { email, first_name, last_name, password }
+POST /api/auth/resend-verification/
+POST /api/auth/password-reset/
+POST /api/auth/password-reset/confirm/
+POST /api/auth/change-password/           (autenticado)
+POST /api/auth/google/
+
+GET  /api/pixels/search_pixel/?q={id}
+GET  /api/pixels/my_pixels/
+POST /api/pixels/initiate_purchase/       multipart: { x, y, images, owner_name, owner_message, currency }
+POST /api/pixels/create_payment_intent/   { session_id, currency }
+POST /api/pixels/confirm_purchase/        { payment_intent_id, session_id }
+GET  /api/pixels/share_pixel/
+POST /api/pixels/share_pixel/
+```
+
+## 🎨 Design tokens
+
+Ver `lib/theme/colors.dart`:
+
+- Primary: `#5BA0F4` → `#3D7ED9` (gradiente)
+- Background: `#000000` / Surface: `#1A1A1A`
+- Like: `#FF4757` / Fire (🔥 >50 likes): `#FF6B35`
