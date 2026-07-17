@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config/routes.dart';
 import '../../theme/colors.dart';
 import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/grid/grid_floating_button.dart';
@@ -18,13 +19,7 @@ class GridScreen extends StatelessWidget {
       body: const InfiniteGridWidget(),
       floatingActionButton: GridFloatingButton(
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Flujo de compra de píxeles (mini-grid, upload, Stripe) — Sprint 4',
-              ),
-            ),
-          );
+          Navigator.of(context).pushNamed(AppRoutes.pixelPurchase);
         },
       ),
     );

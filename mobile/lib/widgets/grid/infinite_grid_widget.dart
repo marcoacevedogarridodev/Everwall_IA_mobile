@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/constants.dart';
+import '../../config/routes.dart';
 import '../../models/pixel_model.dart';
 import '../../providers/grid_provider.dart';
 import '../../providers/pixel_provider.dart';
@@ -83,13 +84,17 @@ class _InfiniteGridWidgetState extends State<InfiniteGridWidget> {
     );
   }
 
+  /// Tap normal sobre un píxel existente -> Pixel Detail Screen (spec 3.2).
+  void _openDetail(PixelModel pixel) {
+    Navigator.of(context).pushNamed(AppRoutes.pixelDetail, arguments: pixel);
+  }
+
+  /// Tap sobre una celda vacía -> inicia el flujo de compra con esa
+  /// posición pre-cargada (Sprint 4, spec 8.1).
   void _onEmptyCellTap(int x, int y) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Posición ($x, $y) disponible — el flujo de compra llega en el Sprint 4',
-        ),
-      ),
+    Navigator.of(context).pushNamed(
+      AppRoutes.pixelPurchase,
+      arguments: {'x': x, 'y': y},
     );
   }
 
@@ -142,7 +147,7 @@ class _InfiniteGridWidgetState extends State<InfiniteGridWidget> {
                     child: GestureDetector(
                       onTap: () {
                         if (pixel != null) {
-                          _openOverlay(pixel);
+                          _openDetail(pixel);
                         } else {
                           _onEmptyCellTap(x, y);
                         }

@@ -99,6 +99,14 @@ class GridProvider extends ChangeNotifier {
     }
   }
 
+  /// Inyecta o actualiza un píxel directo en el cache (usado tras confirmar
+  /// una compra o una edición exitosa, para reflejarlo al instante sin
+  /// esperar un refetch de grid_status).
+  void addOrUpdatePixel(PixelModel pixel) {
+    _pixels[pixel.positionKey] = pixel;
+    notifyListeners();
+  }
+
   /// Actualización optimista tras dar like (Sprint 7 conecta el endpoint
   /// real; por ahora esto solo refleja el toggle en memoria).
   void applyOptimisticLike(String positionKey, bool liked) {

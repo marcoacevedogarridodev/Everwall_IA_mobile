@@ -21,7 +21,45 @@ flutter run --dart-define=API_BASE_URL=http://localhost:8000/api
 flutter run --dart-define=API_BASE_URL=https://tu-dominio-real.com/api
 ```
 
-## ✅ Estado actual: Sprint 3 completado (Sprints 1-2 incluidos)
+## ✅ Estado actual: Sprint 4 completado (Sprints 1-3 incluidos)
+
+### Sprint 4 — Pixel Detail + flujo de compra + Stripe
+- **Tap normal** en un píxel de la grilla → `PixelDetailScreen` (imagen con
+  zoom vía `photo_view`, owner, stats, acciones, comentarios). **Long-press**
+  sigue abriendo el overlay rápido del Sprint 3 (spec 3.2).
+- **Tap en celda vacía** → `PixelPurchaseScreen` con esa posición precargada.
+- **`PixelPurchaseScreen`** (paso 1): mini-grid de disponibilidad reutilizando
+  el cache de `GridProvider` + input manual de X/Y.
+- **`PixelUploadScreen`** (paso 2): cámara/galería vía `image_picker`,
+  retorna el archivo elegido.
+- Paso 3 (formulario owner_name/owner_message/currency) vive de vuelta en
+  `PixelPurchaseScreen` una vez se elige la imagen → confirma con
+  `POST /pixels/initiate_purchase/` (multipart).
+- **`PixelPaymentScreen`** (pasos 5-6): `POST /pixels/create_payment_intent/`
+  → `CardField` de Stripe → `Stripe.instance.confirmPayment()` →
+  `POST /pixels/confirm_purchase/` → pantalla de éxito → vuelve a la grilla.
+- **`PixelEditScreen`**: edición de mensaje/imagen del propio píxel vía
+  `POST /pixels/edit_pixel_content/`, accesible desde el botón "Editar"
+  (solo visible si `pixel.isOwner`).
+- Stripe inicializado en `main.dart` (`Stripe.publishableKey` +
+  `applySettings()`).
+
+### ⚠️ Antes de probar pagos reales
+1. **Pon tu clave pública real de Stripe** en `AppConfig.stripePublishableKey`
+   (o vía `--dart-define=STRIPE_PUBLISHABLE_KEY=pk_test_...`).
+2. **Configura los permisos nativos** para `image_picker` (cámara/galería):
+   - iOS `ios/Runner/Info.plist`: `NSPhotoLibraryUsageDescription`, `NSCameraUsageDescription`
+   - Android: `CAMERA` en el manifest si usarás la cámara (galería no
+     requiere permiso en Android 13+).
+3. **Verifica el formato real** de `initiate_purchase` / `create_payment_intent`
+   / `confirm_purchase` — asumí (documentado en `PaymentService` y
+   `payment_model.dart`):
+   - `initiate_purchase` responde `{ session_id, x, y, currency, price? }`
+   - `create_payment_intent` responde `{ client_secret, payment_intent_id?, amount, currency }`
+   - `confirm_purchase` responde el píxel creado (directo o en `{ pixel: {...} }`)
+   
+   Si difiere, son ajustes acotados a `payment_model.dart` y `payment_service.dart`.
+4. Apple Pay / Google Pay quedan como mejora futura (no incluidos este sprint).
 
 ### Sprint 3 — Grid infinita + navegación principal
 - `MainScreen`: contenedor con bottom navigation real (5 tabs: Grid, Search,

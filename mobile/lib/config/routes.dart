@@ -6,6 +6,12 @@ import '../screens/auth/verify_email_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/auth/reset_password_screen.dart';
 import '../screens/main/main_screen.dart';
+import '../screens/pixel/pixel_detail_screen.dart';
+import '../screens/pixel/pixel_purchase_screen.dart';
+import '../screens/pixel/pixel_payment_screen.dart';
+import '../screens/pixel/pixel_edit_screen.dart';
+import '../models/pixel_model.dart';
+import '../models/payment_model.dart';
 import '../theme/animations.dart';
 
 /// Nombres de ruta centralizados. Usar SIEMPRE estas constantes en vez de
@@ -67,8 +73,27 @@ class AppRoutes {
         );
       case main:
         return _buildRoute(const MainScreen(), settings, fade: true);
-      // Las siguientes rutas se implementan en próximos sprints:
-      // case grid: return _buildRoute(const GridScreen(), settings);
+      case pixelDetail:
+        final pixel = settings.arguments as PixelModel;
+        return _buildRoute(PixelDetailScreen(pixel: pixel), settings);
+      case pixelPurchase:
+        final args = settings.arguments as Map<String, int>?;
+        return _buildRoute(
+          PixelPurchaseScreen(
+            initialX: args?['x'],
+            initialY: args?['y'],
+          ),
+          settings,
+        );
+      case pixelPayment:
+        final session = settings.arguments as PurchaseSessionModel;
+        return _buildRoute(PixelPaymentScreen(session: session), settings);
+      case pixelEdit:
+        final pixel = settings.arguments as PixelModel;
+        return _buildRoute(PixelEditScreen(pixel: pixel), settings);
+      // pixelUpload no tiene ruta nombrada: se navega con Navigator.push
+      // directo desde PixelPurchaseScreen (ver ese archivo) porque retorna
+      // un valor (el File elegido) vía Navigator.pop.
       default:
         return _buildRoute(
           Scaffold(

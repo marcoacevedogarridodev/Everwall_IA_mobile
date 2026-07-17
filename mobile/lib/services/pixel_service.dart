@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
 import '../models/pixel_model.dart';
 import 'api_service.dart';
 
@@ -61,6 +63,36 @@ class PixelService {
   Future<Map<String, dynamic>> getStats() async {
     final data = await _api.get('/pixels/stats/');
     return data as Map<String, dynamic>;
+  }
+
+  /// POST /pixels/edit_pixel_content/ — edición de un píxel propio
+  /// (owner_name, owner_message y, opcionalmente, una nueva imagen).
+  /// Siempre se manda como multipart para soportar ambos casos con el
+  /// mismo método sin duplicar lógica.
+  Future<PixelModel> editPixelContent({
+    required String pixelId,
+    required String ownerName,
+    required String ownerMessage,
+    File? image,
+  }) async {
+    final map = <String, dynamic>{
+      'pixel_id': pixelId,
+      'owner_name': ownerName,
+      'owner_message': ownerMessage,
+    };
+
+    if (image != null) {
+      map['images'] = await MultipartFile.fromFile(
+        image.path,
+        filename: image.path.split('/').last,
+      );
+    }
+
+    final data =
+        await _api.multipart('/pixels/edit_pixel_content/', FormData.fromMap(map));
+    final pixelJson =
+        (data as Map<String, dynamic>)['pixel'] as Map<String, dynamic>? ?? data;
+    return PixelModel.fromJson(pixelJson);
   }
 
   /// DRF a veces pagina (`{ results: [...] }`) y a veces devuelve la lista
