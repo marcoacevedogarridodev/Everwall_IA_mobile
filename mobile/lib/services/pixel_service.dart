@@ -95,6 +95,33 @@ class PixelService {
     return PixelModel.fromJson(pixelJson);
   }
 
+  /// POST /pixels/toggle_like/ — endpoint PROPUESTO (no existía en la
+  /// lista de endpoints reales que compartiste). Sigue el mismo patrón
+  /// de acción que el resto de /pixels/ (`initiate_purchase`,
+  /// `edit_pixel_content`, etc): POST con `pixel_id` en el body, retorna
+  /// el nuevo estado del like.
+  ///
+  /// Contrato propuesto — impleméntalo así en Django para que calce sin
+  /// tocar el mobile, o avísame el nombre/formato real que uses y ajusto
+  /// acá (único lugar que lo necesita):
+  ///
+  ///   POST /api/pixels/toggle_like/
+  ///   Body:     { "pixel_id": "<id>" }
+  ///   Response: { "likes_count": <int>, "is_liked": <bool> }
+  ///
+  /// Ver PENDING_BACKEND_ENDPOINTS.md en la raíz del proyecto para el
+  /// checklist completo de endpoints inventados en el mobile.
+  Future<({int likesCount, bool isLiked})> toggleLike(String pixelId) async {
+    final data = await _api.post('/pixels/toggle_like/', data: {
+      'pixel_id': pixelId,
+    }) as Map<String, dynamic>;
+
+    return (
+      likesCount: (data['likes_count'] as num?)?.toInt() ?? 0,
+      isLiked: data['is_liked'] as bool? ?? false,
+    );
+  }
+
   /// DRF a veces pagina (`{ results: [...] }`) y a veces devuelve la lista
   /// directa (`[...]`). Soportamos ambos formatos acá para no repetir esta
   /// lógica en cada método.

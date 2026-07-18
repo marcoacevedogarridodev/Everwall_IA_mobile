@@ -21,7 +21,39 @@ flutter run --dart-define=API_BASE_URL=http://localhost:8000/api
 flutter run --dart-define=API_BASE_URL=https://tu-dominio-real.com/api
 ```
 
-## ✅ Estado actual: Sprint 4 completado (Sprints 1-3 incluidos)
+## ✅ Estado actual: Sprint 5 completado (Sprints 1-4 incluidos)
+
+### Sprint 5 — Search + My Pixels
+- **`SearchScreen`**: búsqueda por ID con debounce (400ms) contra
+  `GET /pixels/search_pixel/?q={id}`, resultados en grid de 3 columnas
+  (reutiliza `PixelCardWidget`), estados idle/loading/resultados/vacío/error.
+- **`MyPixelsScreen`**: grid de 3 columnas con `GET /pixels/my_pixels/`,
+  pull-to-refresh, estado vacío con CTA directo a `PixelPurchaseScreen`
+  ("¡Compra tu primero!", spec sección 5), y **long-press → menú de
+  opciones** ("Ver detalle" / "Editar contenido", ya conectado a
+  `PixelEditScreen` / `POST /pixels/edit_pixel_content/`).
+- Ambas navegan a `PixelDetailScreen` en tap normal, consistente con el
+  resto de la app.
+
+### 🆕 Endpoint de "like" definido (propuesto) + checklist de pendientes
+Como no existe un endpoint de like en tu backend todavía, definí uno
+siguiendo el mismo protocolo que el resto de tus rutas y ya está 100%
+conectado en el mobile con **optimistic update + rollback automático** si
+la request falla (para que la app funcione bien aunque el endpoint no
+exista aún en el servidor):
+
+```
+POST /api/pixels/toggle_like/
+Body:     { "pixel_id": "<id>" }
+Response: { "likes_count": <int>, "is_liked": <bool> }
+```
+
+Creé **`PENDING_BACKEND_ENDPOINTS.md`** en la raíz del proyecto — ahí se
+va llevando la lista de cualquier endpoint que el mobile necesite y que no
+esté en tu lista de rutas reales, más una tabla de "formatos asumidos" para
+los endpoints que sí existen pero cuyo serializer exacto no tenía. Cuando
+implementes algo en el backend, dímelo (o el formato real si difiere del
+propuesto) y ajusto el mobile en el archivo puntual que corresponda.
 
 ### Sprint 4 — Pixel Detail + flujo de compra + Stripe
 - **Tap normal** en un píxel de la grilla → `PixelDetailScreen` (imagen con

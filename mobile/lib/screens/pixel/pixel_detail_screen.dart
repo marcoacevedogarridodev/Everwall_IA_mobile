@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../config/routes.dart';
 import '../../models/pixel_model.dart';
 import '../../providers/grid_provider.dart';
+import '../../services/pixel_service.dart';
 import '../../theme/colors.dart';
 import '../../theme/text_styles.dart';
 import '../../widgets/pixel/pixel_actions_widget.dart';
@@ -29,8 +30,12 @@ class PixelDetailScreen extends StatefulWidget {
 class _PixelDetailScreenState extends State<PixelDetailScreen> {
   late PixelModel _pixel = widget.pixel;
 
-  void _toggleLike() {
+  /// Optimista contra `POST /pixels/toggle_like/` (endpoint PROPUESTO, ver
+  /// PENDING_BACKEND_ENDPOINTS.md). Revierte si la request falla.
+  Future<void> _toggleLike() async {
     final liked = !_pixel.isLikedByMe;
+    final previous = _pixel;
+
     setState(() {
       _pixel = _pixel.copyWith(
         isLikedByMe: liked,
@@ -38,6 +43,26 @@ class _PixelDetailScreenState extends State<PixelDetailScreen> {
       );
     });
     context.read<GridProvider>().applyOptimisticLike(_pixel.positionKey, liked);
+
+    try {
+      final result = await PixelService.instance.toggleLike(_pixel.id);
+      if (!mounted) return;
+      setState(() {
+        _pixel = _pixel.copyWith(
+          isLikedByMe: result.isLiked,
+          likesCount: result.likesCount,
+        );
+      });
+      context
+          .read<GridProvider>()
+          .applyOptimisticLike(_pixel.positionKey, result.isLiked);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _pixel = previous);
+      context
+          .read<GridProvider>()
+          .applyOptimisticLike(_pixel.positionKey, previous.isLikedByMe);
+    }
   }
 
   @override
