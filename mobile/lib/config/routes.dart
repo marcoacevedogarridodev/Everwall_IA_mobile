@@ -11,6 +11,9 @@ import '../screens/pixel/pixel_purchase_screen.dart';
 import '../screens/pixel/pixel_payment_screen.dart';
 import '../screens/pixel/pixel_edit_screen.dart';
 import '../screens/chat/chat_detail_screen.dart';
+import '../screens/settings/profile_edit_screen.dart';
+import '../screens/settings/change_password_screen.dart';
+import '../screens/settings/settings_screen.dart';
 import '../models/pixel_model.dart';
 import '../models/payment_model.dart';
 import '../models/message_model.dart';
@@ -52,6 +55,7 @@ class AppRoutes {
   // Sprint 8+
   static const String settings = '/settings';
   static const String profileEdit = '/profile-edit';
+  static const String changePassword = '/change-password';
 
   /// Genera las rutas con una transición de slide consistente en toda la app.
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -96,6 +100,12 @@ class AppRoutes {
       case chatDetail:
         final chat = settings.arguments as ChatSummaryModel;
         return _buildRoute(ChatDetailScreen(chat: chat), settings);
+      case AppRoutes.settings:
+        return _buildRoute(const SettingsScreen(), settings);
+      case profileEdit:
+        return _buildRoute(const ProfileEditScreen(), settings);
+      case changePassword:
+        return _buildRoute(const ChangePasswordScreen(), settings);
       // pixelUpload no tiene ruta nombrada: se navega con Navigator.push
       // directo desde PixelPurchaseScreen (ver ese archivo) porque retorna
       // un valor (el File elegido) vía Navigator.pop.

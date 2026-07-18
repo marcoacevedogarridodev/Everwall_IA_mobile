@@ -8,6 +8,12 @@ import 'providers/chat_provider.dart';
 import 'providers/grid_provider.dart';
 import 'providers/pixel_provider.dart';
 import 'providers/theme_provider.dart';
+// Sprint 8 (push notifications) — descomenta tras correr
+// `flutterfire configure` (ver README y notification_service.dart):
+// import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_messaging/firebase_messaging.dart';
+// import 'firebase_options.dart';
+// import 'services/notification_service.dart';
 
 /// Punto de entrada.
 Future<void> main() async {
@@ -18,6 +24,13 @@ Future<void> main() async {
   // inicializa igual (no rompe el build) pero cualquier pago fallará.
   Stripe.publishableKey = AppConfig.stripePublishableKey;
   await Stripe.instance.applySettings();
+
+  // Firebase / Push notifications (Sprint 8, spec 12.1). Descomenta estas
+  // 3 líneas después de:
+  //   1. flutter create . (ver README, Paso 0)
+  //   2. flutterfire configure (genera firebase_options.dart + configs nativas)
+  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   runApp(
     MultiProvider(

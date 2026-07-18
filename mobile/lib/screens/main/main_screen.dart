@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/notification_service.dart';
 import '../../theme/colors.dart';
 import '../../widgets/navigation/bottom_navigation_bar.dart';
 import 'grid_screen.dart';
@@ -27,6 +28,14 @@ class _MainScreenState extends State<MainScreen> {
     MessagesScreen(),
     ProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Seguro de llamar aunque Firebase no esté configurado todavía (ver
+    // notification_service.dart) — falla en silencio internamente.
+    NotificationService.instance.init();
+  }
 
   @override
   Widget build(BuildContext context) {

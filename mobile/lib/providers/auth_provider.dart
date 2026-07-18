@@ -161,6 +161,28 @@ class AuthProvider extends ChangeNotifier {
         ),
       );
 
+  Future<bool> updateProfile({
+    required String firstName,
+    required String lastName,
+  }) async {
+    _setLoading(true);
+    try {
+      final updated = await _authService.updateProfile(
+        firstName: firstName,
+        lastName: lastName,
+      );
+      _user = updated;
+      await _storage.saveUserJson(updated.toJson());
+      _errorMessage = null;
+      return true;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   Future<void> logout() async {
     final refreshToken = await _storage.getRefreshToken();
     try {

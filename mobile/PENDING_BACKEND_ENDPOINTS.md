@@ -86,6 +86,53 @@ Servidor -> Cliente:
 
 ---
 
+## ⏳ Editar perfil
+
+**Estado:** no confirmado — no había ruta de "actualizar perfil" en tu
+lista (solo `GET /auth/me/`). En vez de inventar una ruta nueva, propongo
+extender el método sobre esa misma ruta (patrón común en DRF con
+`RetrieveUpdateAPIView`):
+
+```
+PATCH /api/auth/me/
+Body:     { "first_name": "...", "last_name": "..." }
+Response: el usuario actualizado, mismo formato que GET /auth/me/
+```
+
+Si prefieres una ruta separada (ej. `POST /auth/update-profile/`), es un
+cambio de una línea en `lib/services/auth_service.dart` (`updateProfile`).
+
+**Implementado en el mobile en:**
+- `lib/services/auth_service.dart` → `updateProfile()`
+- `lib/providers/auth_provider.dart` → `updateProfile()`
+- `lib/screens/settings/profile_edit_screen.dart`
+
+**Pendiente aparte:** subida de foto de perfil (botón "Cambiar foto" en
+Profile Edit) — no hay endpoint para eso tampoco, el botón hoy solo
+muestra un aviso. Cuando definas cómo subir el avatar (multipart en el
+mismo PATCH, o endpoint separado), lo conecto.
+
+---
+
+## ⏳ Registro de dispositivo para push (FCM)
+
+**Estado:** no confirmado — necesario para notificaciones push (spec
+12.1). Además, esto requiere que configures Firebase de tu lado (ver
+`lib/services/notification_service.dart` para los pasos exactos:
+`flutter create .`, crear proyecto en Firebase Console, `flutterfire configure`).
+
+```
+POST /api/auth/register_device/
+Body: { "fcm_token": "<token>", "platform": "ios" | "android" }
+Auth: requerido (Bearer token)
+```
+
+**Implementado en el mobile en:**
+- `lib/services/notification_service.dart` → `_registerDeviceToken()`
+  (falla en silencio si el endpoint no existe todavía — no rompe nada)
+
+---
+
 ## ⏳ Comentarios públicos
 
 **Estado:** no confirmado — mismo caso que el like, no vi endpoint de

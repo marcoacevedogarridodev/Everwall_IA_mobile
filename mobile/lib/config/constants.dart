@@ -11,6 +11,7 @@ class AppConstants {
   static const String keyUserData = 'user_data';
   static const String keyThemeMode = 'theme_mode';
   static const String keyOnboardingSeen = 'onboarding_seen';
+  static const String keyNotificationsEnabled = 'notifications_enabled';
 
   // Reglas de negocio
   static const int ownerMessageMaxLength = 140;

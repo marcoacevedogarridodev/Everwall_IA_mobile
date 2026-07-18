@@ -7,9 +7,10 @@ import '../../theme/colors.dart';
 import '../../theme/text_styles.dart';
 import '../../widgets/common/custom_app_bar.dart';
 
-/// Profile Screen (spec sección 7). El header + logout ya son funcionales
-/// (conectados a AuthProvider / POST /auth/logout/). Estadísticas de
-/// píxeles/likes y edición de perfil se completan en el Sprint 8.
+/// Profile Screen (spec sección 7): header, stats, editar perfil, cambiar
+/// contraseña y logout — todo funcional desde el Sprint 8. El ícono de
+/// engranaje en el app bar lleva a SettingsScreen (tema, notificaciones,
+/// versión de la app).
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
@@ -19,7 +20,15 @@ class ProfileScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(title: 'Perfil'),
+      appBar: CustomAppBar(
+        title: 'Perfil',
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => Navigator.of(context).pushNamed(AppRoutes.settings),
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -60,26 +69,13 @@ class ProfileScreen extends StatelessWidget {
             _ProfileOption(
               icon: Icons.edit_outlined,
               label: 'Editar perfil',
-              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Disponible en el Sprint 8')),
-              ),
+              onTap: () => Navigator.of(context).pushNamed(AppRoutes.profileEdit),
             ),
             _ProfileOption(
               icon: Icons.lock_outline,
               label: 'Cambiar contraseña',
-              onTap: () {
-                // AuthProvider.changePassword() ya está implementado y
-                // mapeado a POST /auth/change-password/; falta el
-                // formulario de UI (old/new password), que llega en el
-                // Sprint 8 junto al resto de Profile/Settings.
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Formulario completo de cambio de contraseña — Sprint 8',
-                    ),
-                  ),
-                );
-              },
+              onTap: () =>
+                  Navigator.of(context).pushNamed(AppRoutes.changePassword),
             ),
             const Spacer(),
             OutlinedButton.icon(

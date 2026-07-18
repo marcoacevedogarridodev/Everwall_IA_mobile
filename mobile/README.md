@@ -21,7 +21,47 @@ flutter run --dart-define=API_BASE_URL=http://localhost:8000/api
 flutter run --dart-define=API_BASE_URL=https://tu-dominio-real.com/api
 ```
 
-## ✅ Estado actual: Sprint 7 completado (Sprints 1-6 incluidos)
+## ✅ Estado actual: Sprint 8 completado (Sprints 1-7 incluidos)
+
+### 🛠️ Corrección importante encontrada en este sprint
+El proyecto nunca tuvo `flutter create` ejecutado — faltan las carpetas
+nativas `android/`/`ios/`. Agregué el **Paso 0** al inicio de "Cómo
+correrla" (abajo) con el comando exacto. Sin ese paso, `flutter run` no
+iba a funcionar aunque todo el código Dart estuviera perfecto.
+
+### Sprint 8 — Profile/Settings completos + notificaciones push
+- **`ProfileEditScreen`**: editar nombre/apellido, conectado a
+  `PATCH /auth/me/` (endpoint propuesto, extiende la ruta que ya usas para
+  leer el perfil en vez de inventar una nueva).
+- **`ChangePasswordScreen`**: formulario real (antes era un snackbar) sobre
+  el endpoint ya confirmado `POST /auth/change-password/`.
+- **`SettingsScreen`**: toggle de tema oscuro/claro, toggle de
+  notificaciones push (preferencia local), accesos a editar perfil/cambiar
+  contraseña, versión de la app, logout. Accesible desde el ícono ⚙️ en
+  Profile.
+- **`NotificationService`** (Firebase Cloud Messaging, spec 12.1): pide
+  permiso, obtiene el token FCM, lo registra contra un endpoint propuesto,
+  y queda listo para recibir mensajes en foreground/background — **todo
+  con try/catch defensivo**, así que la app sigue funcionando 100% normal
+  aunque Firebase no esté configurado todavía.
+
+### ⚠️ Para que las notificaciones push funcionen de verdad
+Esto no es algo que yo pueda dejar 100% listo sin tus credenciales:
+1. `flutter create .` (Paso 0 de arriba).
+2. Crear un proyecto en [Firebase Console](https://console.firebase.google.com).
+3. Correr `flutterfire configure` en la raíz de `mobile/` (genera
+   `lib/firebase_options.dart` + configs nativas).
+4. Descomentar las 3 líneas marcadas en `lib/main.dart`.
+
+Mientras tanto, la app arranca y corre igual — `NotificationService.init()`
+falla en silencio si Firebase no está listo.
+
+### 🆕 Dos endpoints propuestos más
+Sumados al checklist en `PENDING_BACKEND_ENDPOINTS.md`:
+```
+PATCH /api/auth/me/                Body: { first_name, last_name }
+POST  /api/auth/register_device/   Body: { fcm_token, platform }
+```
 
 ### Sprint 7 — Sistema de comentarios
 - **`PixelCommentsWidget`** (en Pixel Detail Screen) ahora es 100%
@@ -242,6 +282,20 @@ esto en 2 minutos para que calce exacto.
 La app **compila y corre** mostrando: Splash → Login.
 
 ## 🚀 Cómo correrla
+
+> ⚠️ **Paso 0 — IMPORTANTE, hazlo una sola vez:** este repo solo tiene
+> `lib/`, `assets/` y `pubspec.yaml` — le faltan las carpetas nativas
+> `android/` e `ios/` (Xcode project, Gradle, manifests, etc.), que no son
+> archivos de texto que yo pueda generar acá. Sin esto `flutter run` no
+> va a funcionar. Corrige esto así, **desde adentro de la carpeta `mobile/`**,
+> antes de nada más:
+> ```bash
+> cd mobile
+> flutter create --org com.tuempresa --project-name pixel_app .
+> ```
+> Flutter detecta que ya existen `lib/` y `pubspec.yaml` y solo agrega lo
+> que falta (`android/`, `ios/`, `web/` si quieres, etc.) sin tocar tu
+> código. Es seguro correrlo aunque ya tengas el proyecto avanzado.
 
 ```bash
 cd mobile

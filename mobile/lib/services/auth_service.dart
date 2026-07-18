@@ -71,6 +71,24 @@ class AuthService {
     return UserModel.fromJson(data);
   }
 
+  /// PATCH /auth/me/ — endpoint PROPUESTO. No había una ruta de "editar
+  /// perfil" en tu lista; en vez de inventar un endpoint nuevo, propongo
+  /// extender el método sobre la misma ruta que ya usas para leer el
+  /// perfil (`GET /auth/me/`), que es lo más común en DRF con un
+  /// `RetrieveUpdateAPIView`. Si prefieres una ruta separada (ej.
+  /// `POST /auth/update-profile/`), es un cambio de una línea acá.
+  /// Ver PENDING_BACKEND_ENDPOINTS.md.
+  Future<UserModel> updateProfile({
+    required String firstName,
+    required String lastName,
+  }) async {
+    final data = await _api.patch('/auth/me/', data: {
+      'first_name': firstName,
+      'last_name': lastName,
+    }) as Map<String, dynamic>;
+    return UserModel.fromJson(data);
+  }
+
   Future<void> verifyEmail(String token) async {
     await _api.post('/auth/verify-email/', data: {'token': token});
   }
