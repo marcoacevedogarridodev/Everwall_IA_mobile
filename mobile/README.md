@@ -21,7 +21,37 @@ flutter run --dart-define=API_BASE_URL=http://localhost:8000/api
 flutter run --dart-define=API_BASE_URL=https://tu-dominio-real.com/api
 ```
 
-## ✅ Estado actual: Sprint 5 completado (Sprints 1-4 incluidos)
+## ✅ Estado actual: Sprint 6 completado (Sprints 1-5 incluidos)
+
+### Sprint 6 — Chat/Mensajes + WebSocket
+- **`ChatListScreen`** (tab Mensajes): conversaciones con thumbnail del
+  píxel, último mensaje, fecha y contador de no leídos.
+- **`ChatDetailScreen`**: burbujas estilo WhatsApp (mías a la derecha en
+  color primario, del otro a la izquierda), toggle público/privado al
+  enviar, input con envío por Enter o botón.
+- **Nuevo:** botón "Mensaje" en las acciones del píxel (`PixelDetailScreen`)
+  para *iniciar* una conversación nueva sobre un píxel que aún no tiene
+  mensajes — sin esto no había forma de arrancar un chat, solo de
+  continuarlo desde la lista.
+- **WebSocket** (`WebSocketService` + `socket_io_client`) para que los
+  mensajes lleguen en tiempo real sin refrescar — pero el chat **funciona
+  igual sin él**, ya que todo está armado sobre REST
+  (`GET/POST /pixels/share_pixel/`) como base; el socket es un plus que
+  falla en silencio si no está disponible.
+- Logout ahora también limpia la sesión de chat (`ChatProvider.reset()`),
+  para no arrastrar datos/conexión de un usuario al siguiente en el mismo
+  dispositivo.
+
+### 🆕 Definiciones propuestas (sin confirmar con tu backend)
+Igual que con el like, seguí sin inventar nombres al azar — usé el mismo
+protocolo del resto de tus rutas y lo documenté todo en
+**`PENDING_BACKEND_ENDPOINTS.md`**:
+- Cómo se usa `GET/POST /pixels/share_pixel/` para lista de chats vs.
+  mensajes de una conversación puntual (con `?pixel_id=`).
+- Contrato propuesto para el WebSocket (`join_pixel_chat`, `new_message`, etc.)
+
+Cuando definas esto en el backend, avísame el formato real y ajusto los
+2-3 archivos puntuales que lo necesitan.
 
 ### Sprint 5 — Search + My Pixels
 - **`SearchScreen`**: búsqueda por ID con debounce (400ms) contra

@@ -4,11 +4,12 @@ import 'package:provider/provider.dart';
 import 'app.dart';
 import 'config/app_config.dart';
 import 'providers/auth_provider.dart';
+import 'providers/chat_provider.dart';
 import 'providers/grid_provider.dart';
 import 'providers/pixel_provider.dart';
 import 'providers/theme_provider.dart';
 
-/// Punto de entrada. A partir del Sprint 6 aquí se agrega ChatProvider.
+/// Punto de entrada.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -25,7 +26,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => GridProvider()),
         ChangeNotifierProvider(create: (_) => PixelProvider()),
-        // Sprint 6: ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: const PixelApp(),
     ),

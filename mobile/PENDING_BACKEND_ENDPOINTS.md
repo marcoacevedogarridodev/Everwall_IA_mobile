@@ -56,6 +56,55 @@ Authorization: Bearer <access_token>
 
 ---
 
+## ⏳ WebSocket de mensajería (tiempo real)
+
+**Estado:** no confirmado. No vi protocolo de WebSocket en tu lista de
+rutas (que son todas REST). El chat **funciona igual sin esto** — está
+armado 100% sobre REST (`GET/POST /pixels/share_pixel/`); el WebSocket es
+un "plus" para que los mensajes lleguen sin refrescar. Si no existe o
+falla la conexión, la app no se rompe, solo no hay tiempo real (falla en
+silencio y reintenta).
+
+**Usado por:** Chat List / Chat Detail — spec sección 6.
+
+**Contrato propuesto:**
+```
+Conexión:  wss://tu-dominio.com/ws  (Socket.IO)
+Auth:      handshake con { auth: { token: <access_token> } }
+
+Cliente -> Servidor:
+  join_pixel_chat   { pixel_id }
+  leave_pixel_chat  { pixel_id }
+
+Servidor -> Cliente:
+  new_message       { id, pixel_id, sender_id, sender_name, message, is_private, created_at }
+```
+
+**Implementado en el mobile en:**
+- `lib/services/websocket_service.dart` (usa `socket_io_client`)
+- `lib/providers/chat_provider.dart` → `configure()`, `openChat()`, `closeChat()`
+
+---
+
+## Uso asumido de `GET/POST /pixels/share_pixel/` para el chat
+
+Este SÍ existe en tu lista, pero solo hay un endpoint para todo el sistema
+de mensajería (no uno separado para "lista de chats" vs "mensajes de una
+conversación"). Asumí:
+
+```
+GET  /api/pixels/share_pixel/                -> lista de conversaciones (Chat List)
+GET  /api/pixels/share_pixel/?pixel_id=<id>  -> mensajes de esa conversación (Chat Detail)
+POST /api/pixels/share_pixel/                -> enviar mensaje
+     Body: { "pixel_id": "<id>", "message": "<texto>", "is_private": <bool> }
+```
+
+**Archivo a ajustar si el formato real difiere:** `lib/services/pixel_service.dart`
+(`getChatList`, `getMessages`, `sendMessage`) y `lib/models/message_model.dart`
+(`ChatSummaryModel.fromJson`, `MessageModel.fromJson`).
+
+---
+
 ## Formatos de respuesta a confirmar
 
 Estos endpoints SÍ existen en tu lista de rutas reales, pero no tenía el
@@ -74,6 +123,7 @@ uno — avísame y lo dejo exacto:
 | `POST /pixels/create_payment_intent/` | `lib/models/payment_model.dart` (`PaymentIntentModel`) | `{ client_secret, payment_intent_id?, amount, currency }` |
 | `POST /pixels/confirm_purchase/` | `lib/services/payment_service.dart` (`confirmPurchase`) | El píxel creado, directo o en `{ pixel: {...} }` |
 | `POST /pixels/edit_pixel_content/` | `lib/services/pixel_service.dart` (`editPixelContent`) | Multipart `{ pixel_id, owner_name, owner_message, images? }` → responde el píxel actualizado |
+| `GET/POST /pixels/share_pixel/` | `lib/services/pixel_service.dart` (`getChatList`, `getMessages`, `sendMessage`) + `lib/models/message_model.dart` | Ver sección dedicada arriba |
 
 ---
 

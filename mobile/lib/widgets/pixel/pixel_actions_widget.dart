@@ -16,6 +16,7 @@ class PixelActionsWidget extends StatelessWidget {
   final VoidCallback onLikeToggle;
   final VoidCallback onEdit;
   final VoidCallback? onComment;
+  final VoidCallback? onMessage;
 
   const PixelActionsWidget({
     super.key,
@@ -23,6 +24,7 @@ class PixelActionsWidget extends StatelessWidget {
     required this.onLikeToggle,
     required this.onEdit,
     this.onComment,
+    this.onMessage,
   });
 
   @override
@@ -57,6 +59,14 @@ class PixelActionsWidget extends StatelessWidget {
             );
           },
         ),
+        if (!pixel.isOwner && onMessage != null) ...[
+          const SizedBox(width: 20),
+          _ActionButton(
+            icon: Icons.mail_outline,
+            label: 'Mensaje',
+            onTap: onMessage!,
+          ),
+        ],
         const Spacer(),
         if (pixel.isOwner)
           _ActionButton(icon: Icons.edit_outlined, label: 'Editar', onTap: onEdit),

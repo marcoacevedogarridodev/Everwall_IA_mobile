@@ -10,8 +10,10 @@ import '../screens/pixel/pixel_detail_screen.dart';
 import '../screens/pixel/pixel_purchase_screen.dart';
 import '../screens/pixel/pixel_payment_screen.dart';
 import '../screens/pixel/pixel_edit_screen.dart';
+import '../screens/chat/chat_detail_screen.dart';
 import '../models/pixel_model.dart';
 import '../models/payment_model.dart';
+import '../models/message_model.dart';
 import '../theme/animations.dart';
 
 /// Nombres de ruta centralizados. Usar SIEMPRE estas constantes en vez de
@@ -91,6 +93,9 @@ class AppRoutes {
       case pixelEdit:
         final pixel = settings.arguments as PixelModel;
         return _buildRoute(PixelEditScreen(pixel: pixel), settings);
+      case chatDetail:
+        final chat = settings.arguments as ChatSummaryModel;
+        return _buildRoute(ChatDetailScreen(chat: chat), settings);
       // pixelUpload no tiene ruta nombrada: se navega con Navigator.push
       // directo desde PixelPurchaseScreen (ver ese archivo) porque retorna
       // un valor (el File elegido) vía Navigator.pop.

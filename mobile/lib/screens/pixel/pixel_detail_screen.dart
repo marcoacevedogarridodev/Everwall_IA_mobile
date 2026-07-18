@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/routes.dart';
+import '../../models/message_model.dart';
 import '../../models/pixel_model.dart';
 import '../../providers/grid_provider.dart';
 import '../../services/pixel_service.dart';
@@ -103,6 +104,15 @@ class _PixelDetailScreenState extends State<PixelDetailScreen> {
                 PixelActionsWidget(
                   pixel: _pixel,
                   onLikeToggle: _toggleLike,
+                  onMessage: () => Navigator.of(context).pushNamed(
+                    AppRoutes.chatDetail,
+                    arguments: ChatSummaryModel(
+                      pixelId: _pixel.id,
+                      pixelImageUrl: _pixel.imageUrl,
+                      pixelOwnerName: _pixel.ownerName,
+                      lastMessage: '',
+                    ),
+                  ),
                   onEdit: () async {
                     final updated = await Navigator.of(context).pushNamed(
                       AppRoutes.pixelEdit,

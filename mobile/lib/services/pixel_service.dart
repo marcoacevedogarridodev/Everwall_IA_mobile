@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import '../models/message_model.dart';
 import '../models/pixel_model.dart';
 import 'api_service.dart';
 
@@ -120,6 +121,43 @@ class PixelService {
       likesCount: (data['likes_count'] as num?)?.toInt() ?? 0,
       isLiked: data['is_liked'] as bool? ?? false,
     );
+  }
+
+  /// GET /pixels/share_pixel/ — lista de conversaciones del usuario
+  /// (spec sección 6, Messages Screen). Ver nota de formato asumido en
+  /// message_model.dart / PENDING_BACKEND_ENDPOINTS.md.
+  Future<List<ChatSummaryModel>> getChatList() async {
+    final data = await _api.get('/pixels/share_pixel/');
+    final list = _extractList(data);
+    return list.map((e) => ChatSummaryModel.fromJson(e)).toList();
+  }
+
+  /// GET /pixels/share_pixel/?pixel_id=X — mensajes de una conversación
+  /// puntual (Pixel Chat Detail).
+  Future<List<MessageModel>> getMessages(String pixelId, {String? currentUserId}) async {
+    final data = await _api.get('/pixels/share_pixel/', query: {'pixel_id': pixelId});
+    final list = _extractList(data);
+    return list
+        .map((e) => MessageModel.fromJson(e, currentUserId: currentUserId))
+        .toList();
+  }
+
+  /// POST /pixels/share_pixel/ — envía un mensaje público o privado sobre
+  /// un píxel.
+  Future<MessageModel> sendMessage({
+    required String pixelId,
+    required String message,
+    required bool isPrivate,
+    String? currentUserId,
+  }) async {
+    final data = await _api.post('/pixels/share_pixel/', data: {
+      'pixel_id': pixelId,
+      'message': message,
+      'is_private': isPrivate,
+    }) as Map<String, dynamic>;
+
+    final messageJson = data['message'] as Map<String, dynamic>? ?? data;
+    return MessageModel.fromJson(messageJson, currentUserId: currentUserId);
   }
 
   /// DRF a veces pagina (`{ results: [...] }`) y a veces devuelve la lista
