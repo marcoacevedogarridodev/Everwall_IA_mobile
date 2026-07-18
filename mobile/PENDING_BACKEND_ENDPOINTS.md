@@ -86,6 +86,39 @@ Servidor -> Cliente:
 
 ---
 
+## ⏳ Comentarios públicos
+
+**Estado:** no confirmado — mismo caso que el like, no vi endpoint de
+comentarios en tu lista de rutas reales.
+
+```
+GET  /api/pixels/pixel_comments/?pixel_id=<id>
+Response: [ { id, pixel_id, author_id, author_name, message, created_at }, ... ]
+
+POST /api/pixels/pixel_comments/
+Body: { "pixel_id": "<id>", "message": "<texto>" }
+Response: el comentario creado, mismo formato que el GET
+Auth: requerido (Bearer token)
+```
+
+**Usado por:** `PixelCommentsWidget` en Pixel Detail Screen (listado +
+input para agregar). Si el endpoint no existe todavía, esta sección
+muestra un error no intrusivo con botón "Reintentar" sin romper el resto
+de la pantalla (imagen, stats, acciones siguen funcionando igual).
+
+**Implementado en el mobile en:**
+- `lib/models/comment_model.dart`
+- `lib/services/pixel_service.dart` → `getComments()`, `addComment()`
+- `lib/widgets/pixel/pixel_comments_widget.dart`
+
+**Nota de diseño:** "Responder privadamente" en cada comentario abre el
+chat 1:1 sobre ese píxel (Sprint 6) — como el sistema de mensajería solo
+tiene un hilo por píxel (no uno por par de usuarios), es una aproximación
+razonable en vez de una conversación aislada por comentario. Si tu backend
+maneja hilos por usuario, avísame y ajustamos.
+
+---
+
 ## Uso asumido de `GET/POST /pixels/share_pixel/` para el chat
 
 Este SÍ existe en tu lista, pero solo hay un endpoint para todo el sistema

@@ -105,10 +105,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         children: [
                           if (summary.lastMessageAt != null)
                             Text(
-                              Formatters.truncate(
-                                '${summary.lastMessageAt!.day}/${summary.lastMessageAt!.month}',
-                                5,
-                              ),
+                              Formatters.timeAgo(summary.lastMessageAt!),
                               style: AppTextStyles.caption,
                             ),
                           if (summary.unreadCount > 0) ...[

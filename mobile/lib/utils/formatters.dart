@@ -35,4 +35,14 @@ class Formatters {
     if (text.length <= maxLength) return text;
     return '${text.substring(0, maxLength)}…';
   }
+
+  /// Fecha relativa corta ("2h", "3d", "ahora") para comentarios y chat.
+  static String timeAgo(DateTime date) {
+    final diff = DateTime.now().difference(date);
+    if (diff.inSeconds < 60) return 'ahora';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    if (diff.inDays < 7) return '${diff.inDays}d';
+    return '${date.day}/${date.month}/${date.year}';
+  }
 }

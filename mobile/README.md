@@ -21,7 +21,29 @@ flutter run --dart-define=API_BASE_URL=http://localhost:8000/api
 flutter run --dart-define=API_BASE_URL=https://tu-dominio-real.com/api
 ```
 
-## ✅ Estado actual: Sprint 6 completado (Sprints 1-5 incluidos)
+## ✅ Estado actual: Sprint 7 completado (Sprints 1-6 incluidos)
+
+### Sprint 7 — Sistema de comentarios
+- **`PixelCommentsWidget`** (en Pixel Detail Screen) ahora es 100%
+  funcional: lista de comentarios, input para publicar uno nuevo, y
+  "Responder privadamente" en cada comentario ajeno, que abre el chat 1:1
+  sobre ese píxel (Sprint 6).
+- El like (Sprint 5) y los comentarios (este sprint) son los dos sistemas
+  que necesitaban endpoints que no estaban en tu lista — ambos siguen el
+  mismo protocolo del resto de tus rutas y quedan documentados en
+  `PENDING_BACKEND_ENDPOINTS.md`.
+- Mejoras chicas de paso: `Formatters.timeAgo()` (fechas relativas "2h",
+  "3d") reemplaza un formato provisorio que había quedado en el chat list;
+  `LoadingWidget` ahora soporta un modo `compact` para usos inline.
+
+### 🆕 Nuevo endpoint propuesto: comentarios
+```
+GET  /api/pixels/pixel_comments/?pixel_id=<id>
+POST /api/pixels/pixel_comments/   Body: { pixel_id, message }
+```
+Si el endpoint no existe todavía en tu backend, la sección de comentarios
+muestra un error con botón "Reintentar" sin romper el resto de Pixel
+Detail (imagen, stats, likes, editar siguen funcionando).
 
 ### Sprint 6 — Chat/Mensajes + WebSocket
 - **`ChatListScreen`** (tab Mensajes): conversaciones con thumbnail del

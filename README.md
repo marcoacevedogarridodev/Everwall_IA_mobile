@@ -1,4 +1,4 @@
-### Instalacion
+### Instalacion - BACKEND
 ```bash
 cd backend
 pip install -r requirements.txt
@@ -127,3 +127,5 @@ Authorization: Bearer <access_token>
   "owner_message": "Nuevo mensaje"
 }
 ```
+
+### Instalacion - FRONTEND

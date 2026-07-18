@@ -14,9 +14,10 @@ import '../pixel/pixel_actions_widget.dart';
 /// Se abre como bottom sheet desde InfiniteGridWidget con
 /// `PixelProvider.select(pixel)` ya hecho por el caller.
 ///
-/// El sistema de comentarios completo llega en el Sprint 7 (aquí solo se
-/// muestra el contador). "Ver detalle completo" navega a PixelDetailScreen
-/// y "Editar" a PixelEditScreen (ambos ya funcionales desde el Sprint 4).
+/// El listado completo de comentarios, con input para agregar y "responder
+/// privadamente" (Sprint 7), vive en PixelDetailScreen — acá solo se
+/// muestra el contador. "Ver detalle completo" navega ahí y "Editar" a
+/// PixelEditScreen (ambos ya funcionales desde el Sprint 4).
 class PixelOverlayWidget extends StatelessWidget {
   const PixelOverlayWidget({super.key});
 

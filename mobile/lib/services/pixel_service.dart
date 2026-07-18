@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import '../models/comment_model.dart';
 import '../models/message_model.dart';
 import '../models/pixel_model.dart';
 import 'api_service.dart';
@@ -158,6 +159,33 @@ class PixelService {
 
     final messageJson = data['message'] as Map<String, dynamic>? ?? data;
     return MessageModel.fromJson(messageJson, currentUserId: currentUserId);
+  }
+
+  /// GET /pixels/pixel_comments/?pixel_id=X — endpoint PROPUESTO (spec
+  /// sección 9.2, comentarios públicos). Ver comment_model.dart y
+  /// PENDING_BACKEND_ENDPOINTS.md para el contrato completo.
+  Future<List<CommentModel>> getComments(String pixelId, {String? currentUserId}) async {
+    final data = await _api.get('/pixels/pixel_comments/', query: {'pixel_id': pixelId});
+    final list = _extractList(data);
+    return list
+        .map((e) => CommentModel.fromJson(e, currentUserId: currentUserId))
+        .toList();
+  }
+
+  /// POST /pixels/pixel_comments/ — endpoint PROPUESTO. Crea un
+  /// comentario público sobre un píxel.
+  Future<CommentModel> addComment({
+    required String pixelId,
+    required String message,
+    String? currentUserId,
+  }) async {
+    final data = await _api.post('/pixels/pixel_comments/', data: {
+      'pixel_id': pixelId,
+      'message': message,
+    }) as Map<String, dynamic>;
+
+    final commentJson = data['comment'] as Map<String, dynamic>? ?? data;
+    return CommentModel.fromJson(commentJson, currentUserId: currentUserId);
   }
 
   /// DRF a veces pagina (`{ results: [...] }`) y a veces devuelve la lista

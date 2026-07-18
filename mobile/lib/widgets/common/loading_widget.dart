@@ -7,8 +7,9 @@ import '../../theme/colors.dart';
 /// para el estado inicial de la grilla (spec 15.1: shimmer effect).
 class LoadingWidget extends StatelessWidget {
   final String? message;
+  final bool compact;
 
-  const LoadingWidget({super.key, this.message});
+  const LoadingWidget({super.key, this.message, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +17,14 @@ class LoadingWidget extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const CircularProgressIndicator(color: AppColors.primary),
+          SizedBox(
+            width: compact ? 20 : 36,
+            height: compact ? 20 : 36,
+            child: const CircularProgressIndicator(
+              color: AppColors.primary,
+              strokeWidth: 2.4,
+            ),
+          ),
           if (message != null) ...[
             const SizedBox(height: 12),
             Text(message!, style: const TextStyle(color: AppColors.textSecondary)),
