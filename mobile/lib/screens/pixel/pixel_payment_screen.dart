@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import '../../config/routes.dart';
 import '../../models/payment_model.dart';
 import '../../models/pixel_model.dart';
+import '../../services/analytics_service.dart';
 import '../../services/api_exception.dart';
 import '../../services/payment_service.dart';
 import '../../theme/colors.dart';
@@ -22,6 +24,11 @@ import '../../widgets/auth/gradient_button.dart';
 /// pública real de Stripe y correr `Stripe.instance.applySettings()` en
 /// main.dart (ya está agregado ahí). Apple Pay / Google Pay se listan como
 /// mejora futura (spec 8.2) — no incluidos en este sprint.
+///
+/// ⚠️ Solo mobile por ahora: en Flutter Web, `flutter_stripe` necesita
+/// configuración aparte (Stripe.js en `web/index.html`) que no está hecha
+/// todavía — ver nota en `main.dart`. Esta screen detecta `kIsWeb` y
+/// muestra un aviso en vez de intentar cobrar y crashear.
 class PixelPaymentScreen extends StatefulWidget {
   final PurchaseSessionModel session;
   const PixelPaymentScreen({super.key, required this.session});
@@ -30,7 +37,7 @@ class PixelPaymentScreen extends StatefulWidget {
   State<PixelPaymentScreen> createState() => _PixelPaymentScreenState();
 }
 
-enum _PaymentStage { loadingIntent, readyToPay, processing, error, success }
+enum _PaymentStage { loadingIntent, readyToPay, processing, error, success, webNotSupported }
 
 class _PixelPaymentScreenState extends State<PixelPaymentScreen> {
   _PaymentStage _stage = _PaymentStage.loadingIntent;
@@ -42,6 +49,13 @@ class _PixelPaymentScreenState extends State<PixelPaymentScreen> {
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) {
+      // Evita llamar a create_payment_intent + Stripe en web (ver nota de
+      // clase arriba) — nada que ganar mostrando loading para algo que no
+      // va a poder cobrar.
+      _stage = _PaymentStage.webNotSupported;
+      return;
+    }
     _createIntent();
   }
 
@@ -94,6 +108,11 @@ class _PixelPaymentScreenState extends State<PixelPaymentScreen> {
         _confirmedPixel = pixel;
         _stage = _PaymentStage.success;
       });
+      AnalyticsService.instance.logPurchaseComplete(
+        pixelId: pixel.id,
+        amount: intent.amount ?? 0,
+        currency: intent.currency,
+      );
     } on StripeException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -129,6 +148,8 @@ class _PixelPaymentScreenState extends State<PixelPaymentScreen> {
 
   Widget _buildBody() {
     switch (_stage) {
+      case _PaymentStage.webNotSupported:
+        return _buildWebNotSupported();
       case _PaymentStage.loadingIntent:
         return const Center(
           child: CircularProgressIndicator(color: AppColors.primary),
@@ -225,6 +246,35 @@ class _PixelPaymentScreenState extends State<PixelPaymentScreen> {
             onPressed: _cardComplete && !isProcessing ? _pay : null,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildWebNotSupported() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.phone_iphone, color: AppColors.primary, size: 56),
+            const SizedBox(height: 20),
+            const Text('Pagos disponibles en la app móvil', style: AppTextStyles.title),
+            const SizedBox(height: 10),
+            const Text(
+              'El cobro con tarjeta (Stripe) todavía no está configurado para '
+              'la versión web — pruébalo desde un emulador o celular Android/iOS. '
+              'El resto de la app funciona igual acá.',
+              style: AppTextStyles.bodySecondary,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            GradientButton(
+              label: 'Volver a la grilla',
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -5,7 +5,9 @@ import '../../models/comment_model.dart';
 import '../../models/message_model.dart';
 import '../../models/pixel_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/analytics_service.dart';
 import '../../services/api_exception.dart';
+import '../../services/offline_service.dart';
 import '../../services/pixel_service.dart';
 import '../../theme/colors.dart';
 import '../../theme/text_styles.dart';
@@ -71,12 +73,40 @@ class _PixelCommentsWidgetState extends State<PixelCommentsWidget> {
     }
   }
 
+  /// Sprint 9: si no hay conexión, encola el comentario en OfflineService
+  /// en vez de fallar — se muestra igual en la lista local (marcado como
+  /// "pendiente de sincronizar" vía un id temporal) y se envía de verdad
+  /// cuando vuelve la señal.
   Future<void> _post() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
+    final auth = context.read<AuthProvider>();
+    final userId = auth.user?.id;
+
+    if (!await OfflineService.instance.hasConnection) {
+      await OfflineService.instance.queueCommentAction(widget.pixel.id, text);
+      if (!mounted) return;
+      _controller.clear();
+      setState(() {
+        _comments = [
+          CommentModel(
+            id: 'pending-${DateTime.now().millisecondsSinceEpoch}',
+            pixelId: widget.pixel.id,
+            authorId: userId ?? '',
+            authorName: '${auth.user?.fullName ?? 'Tú'} (pendiente de enviar)',
+            message: text,
+            isMine: true,
+            createdAt: DateTime.now(),
+          ),
+          ..._comments,
+        ];
+        _state = _CommentsState.loaded;
+      });
+      return;
+    }
+
     setState(() => _isPosting = true);
-    final userId = context.read<AuthProvider>().user?.id;
     try {
       final comment = await PixelService.instance.addComment(
         pixelId: widget.pixel.id,
@@ -89,6 +119,7 @@ class _PixelCommentsWidgetState extends State<PixelCommentsWidget> {
         _comments = [comment, ..._comments];
         _state = _CommentsState.loaded;
       });
+      AnalyticsService.instance.logCommentPosted(widget.pixel.id);
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));

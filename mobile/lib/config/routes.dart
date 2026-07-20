@@ -27,6 +27,13 @@ import '../theme/animations.dart';
 class AppRoutes {
   AppRoutes._();
 
+  /// Necesaria para navegar desde fuera del árbol de widgets — en
+  /// particular desde DeepLinkService (Sprint 9), que puede recibir un
+  /// link antes de que exista un BuildContext útil (ej. app recién
+  /// abierta desde frío por un link).
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
   static const String splash = '/';
   static const String login = '/login';
   static const String register = '/register';

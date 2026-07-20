@@ -62,7 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: const CustomAppBar(title: 'Configuración'),
       body: ListView(
         children: [
-          _SectionHeader('Cuenta'),
+          const _SectionHeader('Cuenta'),
           ListTile(
             leading: const Icon(Icons.person_outline, color: AppColors.textSecondary),
             title: const Text('Editar perfil'),
@@ -76,7 +76,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onTap: () => Navigator.of(context).pushNamed(AppRoutes.changePassword),
           ),
           const Divider(color: AppColors.divider, height: 1),
-          _SectionHeader('Preferencias'),
+          const _SectionHeader('Preferencias'),
           SwitchListTile(
             secondary: const Icon(Icons.dark_mode_outlined, color: AppColors.textSecondary),
             title: const Text('Modo oscuro'),
@@ -85,7 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: AppTextStyles.caption,
             ),
             value: isDark,
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
             onChanged: (_) => themeProvider.toggleTheme(),
           ),
           SwitchListTile(
@@ -97,11 +97,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: AppTextStyles.caption,
             ),
             value: _notificationsEnabled,
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
             onChanged: _toggleNotifications,
           ),
           const Divider(color: AppColors.divider, height: 1),
-          _SectionHeader('Acerca de'),
+          const _SectionHeader('Acerca de'),
           ListTile(
             leading: const Icon(Icons.info_outline, color: AppColors.textSecondary),
             title: const Text('Versión'),

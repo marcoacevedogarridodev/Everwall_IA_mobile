@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
+import '../services/analytics_service.dart';
 import '../services/api_exception.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
@@ -57,6 +58,7 @@ class AuthProvider extends ChangeNotifier {
       _user = result.user;
       _status = AuthStatus.authenticated;
       _errorMessage = null;
+      AnalyticsService.instance.logLogin(method: 'email');
       return true;
     } on ApiException catch (e) {
       _errorMessage = e.message;
@@ -82,6 +84,7 @@ class AuthProvider extends ChangeNotifier {
       _user = result.user;
       _status = AuthStatus.authenticated;
       _errorMessage = null;
+      AnalyticsService.instance.logLogin(method: 'google');
       return true;
     } on ApiException catch (e) {
       _errorMessage = e.message;
@@ -106,6 +109,7 @@ class AuthProvider extends ChangeNotifier {
         password: password,
       );
       _errorMessage = null;
+      AnalyticsService.instance.logRegister();
       return true;
     } on ApiException catch (e) {
       _errorMessage = e.message;

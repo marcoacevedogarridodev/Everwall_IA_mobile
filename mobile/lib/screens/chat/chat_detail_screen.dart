@@ -146,7 +146,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               children: [
                 Switch(
                   value: _sendPrivately,
-                  activeColor: AppColors.primary,
+                  activeThumbColor: AppColors.primary,
                   onChanged: (v) => setState(() => _sendPrivately = v),
                 ),
                 Text(
@@ -251,12 +251,12 @@ class _MessageBubble extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.lock_outline,
-                      size: 11, color: Colors.white.withOpacity(0.6)),
+                      size: 11, color: Colors.white.withValues(alpha: 0.6)),
                   const SizedBox(width: 3),
                   Text(
                     'Privado',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       fontSize: 10,
                     ),
                   ),

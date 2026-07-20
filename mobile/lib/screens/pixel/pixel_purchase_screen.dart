@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../config/app_config.dart';
 import '../../config/constants.dart';
 import '../../config/routes.dart';
-import '../../models/payment_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/grid_provider.dart';
 import '../../services/api_exception.dart';
@@ -221,8 +220,8 @@ class _PixelPurchaseScreenState extends State<PixelPurchaseScreen> {
           const SizedBox(height: 20),
           _buildMiniGrid(),
           const SizedBox(height: 8),
-          Row(
-            children: const [
+          const Row(
+            children: [
               _LegendDot(color: AppColors.surfaceLight, label: 'Disponible'),
               SizedBox(width: 16),
               _LegendDot(color: AppColors.surface, label: 'Ocupado'),
@@ -247,7 +246,7 @@ class _PixelPurchaseScreenState extends State<PixelPurchaseScreen> {
           aspectRatio: 1,
           child: GridView.builder(
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: _windowSize,
               mainAxisSpacing: 3,
               crossAxisSpacing: 3,
@@ -321,7 +320,7 @@ class _PixelPurchaseScreenState extends State<PixelPurchaseScreen> {
           ),
           const SizedBox(height: 14),
           DropdownButtonFormField<String>(
-            value: _currency,
+            initialValue: _currency,
             dropdownColor: AppColors.surface,
             style: const TextStyle(color: AppColors.textPrimary),
             decoration: const InputDecoration(labelText: 'Moneda'),
@@ -338,7 +337,7 @@ class _PixelPurchaseScreenState extends State<PixelPurchaseScreen> {
           ),
           if (AppConfig.isDev) ...[
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Posición ($x, $y) — POST /pixels/initiate_purchase/',
               style: AppTextStyles.caption,
               textAlign: TextAlign.center,

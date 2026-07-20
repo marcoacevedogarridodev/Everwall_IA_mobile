@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/colors.dart';
-import '../../theme/text_styles.dart';
 import '../../utils/validators.dart';
 import '../../widgets/auth/auth_text_field.dart';
 import '../../widgets/auth/gradient_button.dart';

@@ -4,6 +4,8 @@ import '../../config/routes.dart';
 import '../../models/message_model.dart';
 import '../../models/pixel_model.dart';
 import '../../providers/grid_provider.dart';
+import '../../services/analytics_service.dart';
+import '../../services/offline_service.dart';
 import '../../services/pixel_service.dart';
 import '../../theme/colors.dart';
 import '../../theme/text_styles.dart';
@@ -31,8 +33,16 @@ class PixelDetailScreen extends StatefulWidget {
 class _PixelDetailScreenState extends State<PixelDetailScreen> {
   late PixelModel _pixel = widget.pixel;
 
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.logPixelView(_pixel.id);
+  }
+
   /// Optimista contra `POST /pixels/toggle_like/` (endpoint PROPUESTO, ver
-  /// PENDING_BACKEND_ENDPOINTS.md). Revierte si la request falla.
+  /// PENDING_BACKEND_ENDPOINTS.md). Revierte si la request falla por algo
+  /// que no sea falta de conexión (Sprint 9: si no hay señal, se encola en
+  /// vez de intentar y revertir — ver OfflineService).
   Future<void> _toggleLike() async {
     final liked = !_pixel.isLikedByMe;
     final previous = _pixel;
@@ -44,6 +54,15 @@ class _PixelDetailScreenState extends State<PixelDetailScreen> {
       );
     });
     context.read<GridProvider>().applyOptimisticLike(_pixel.positionKey, liked);
+
+    if (liked) {
+      AnalyticsService.instance.logLikeGiven(_pixel.id);
+    }
+
+    if (!await OfflineService.instance.hasConnection) {
+      await OfflineService.instance.queueLikeAction(_pixel.id);
+      return;
+    }
 
     try {
       final result = await PixelService.instance.toggleLike(_pixel.id);

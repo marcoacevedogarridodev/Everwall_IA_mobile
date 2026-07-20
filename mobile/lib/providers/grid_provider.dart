@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/pixel_model.dart';
+import '../services/offline_service.dart';
 import '../services/pixel_service.dart';
 
 /// Tamaño de "chunk" (en celdas) usado para trackear qué regiones ya se
@@ -20,11 +21,13 @@ class GridProvider extends ChangeNotifier {
   final Set<String> _loadedChunks = {};
 
   bool _isLoading = false;
+  bool _isOffline = false;
   String? _error;
   Timer? _debounce;
 
   Map<String, PixelModel> get pixels => _pixels;
   bool get isLoading => _isLoading;
+  bool get isOffline => _isOffline;
   String? get error => _error;
 
   PixelModel? pixelAt(int x, int y) => _pixels['$x,$y'];
@@ -91,8 +94,22 @@ class GridProvider extends ChangeNotifier {
         _pixels[pixel.positionKey] = pixel;
       }
       _loadedChunks.addAll(missingChunks);
+      _isOffline = false;
+
+      // Cache best-effort para poder mostrar algo si se pierde la
+      // conexión más adelante (spec 12.2). Nunca bloquea ni falla el flujo.
+      unawaited(OfflineService.instance.cacheGridSnapshot(_pixels.values));
     } catch (e) {
-      _error = 'No se pudo cargar la grilla. Desliza para reintentar.';
+      final cached = OfflineService.instance.getCachedGridSnapshot();
+      if (cached.isNotEmpty) {
+        for (final pixel in cached) {
+          _pixels.putIfAbsent(pixel.positionKey, () => pixel);
+        }
+        _isOffline = true;
+        _error = 'Sin conexión — mostrando la última grilla guardada.';
+      } else {
+        _error = 'No se pudo cargar la grilla. Desliza para reintentar.';
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -107,8 +124,11 @@ class GridProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Actualización optimista tras dar like (Sprint 7 conecta el endpoint
-  /// real; por ahora esto solo refleja el toggle en memoria).
+  /// Refleja el toggle de like en el cache del grid al instante. La
+  /// persistencia real (POST /pixels/toggle_like/, endpoint propuesto) la
+  /// maneja el caller (PixelProvider / PixelDetailScreen) — esto solo
+  /// mantiene la grilla visualmente consistente con lo que ve el usuario
+  /// en el overlay/detail.
   void applyOptimisticLike(String positionKey, bool liked) {
     final pixel = _pixels[positionKey];
     if (pixel == null) return;
@@ -124,6 +144,7 @@ class GridProvider extends ChangeNotifier {
     _pixels.clear();
     _loadedChunks.clear();
     _error = null;
+    _isOffline = false;
     notifyListeners();
   }
 

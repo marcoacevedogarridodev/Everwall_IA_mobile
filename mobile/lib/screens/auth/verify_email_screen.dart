@@ -121,8 +121,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              Row(
-                children: const [
+              const Row(
+                children: [
                   Expanded(child: Divider(color: AppColors.divider)),
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),

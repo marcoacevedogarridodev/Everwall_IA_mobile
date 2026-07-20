@@ -83,7 +83,7 @@ class _SplashScreenState extends State<SplashScreen>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(_glow.value * 0.6),
+                      color: AppColors.primary.withValues(alpha: _glow.value * 0.6),
                       blurRadius: 40,
                       spreadRadius: 6,
                     ),
@@ -118,7 +118,7 @@ class _LogoMark extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Text('Pixel App', style: AppTextStyles.headline2),
+        const Text('Pixel App', style: AppTextStyles.headline2),
       ],
     );
   }

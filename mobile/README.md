@@ -21,9 +21,59 @@ flutter run --dart-define=API_BASE_URL=http://localhost:8000/api
 flutter run --dart-define=API_BASE_URL=https://tu-dominio-real.com/api
 ```
 
-## ✅ Estado actual: Sprint 8 completado (Sprints 1-7 incluidos)
+## ✅ Estado actual: Sprint 9 completado (Sprints 1-8 incluidos)
 
-### 🛠️ Corrección importante encontrada en este sprint
+### Sprint 9 — Deep links, soporte offline, analytics
+- **Deep links** (`pixelapp://pixel/{id}`, spec 12.3): `DeepLinkService`
+  escucha links entrantes (`app_links`) y resuelve el ID contra
+  `search_pixel` (sin inventar endpoint nuevo) para navegar a
+  `PixelDetailScreen`. Ya se usa como link de "Compartir" desde el
+  Sprint 3 — ahora también funciona en la dirección inversa (abrir la app
+  desde ese link).
+- **Soporte offline** (spec 12.2): `OfflineService` (Hive) cachea el
+  último snapshot de la grilla y muestra un banner "Sin conexión —
+  mostrando datos guardados" si falla la carga y hay cache disponible.
+  Los likes y comentarios hechos sin conexión se encolan y se sincronizan
+  solos al reconectar (`connectivity_plus` detecta el cambio de red).
+- **Analytics** (spec 12.4, Firebase Analytics): eventos de login/registro,
+  vista de píxel, compra completada, like dado y comentario publicado —
+  mismo patrón defensivo que las notificaciones push (Sprint 8): si
+  Firebase no está configurado, cada llamada falla en silencio sin romper
+  la app.
+
+### ⚠️ Configuración nativa pendiente para deep links
+Igual que con Firebase (Sprint 8), esto requiere tocar archivos nativos
+que no existen en este repo hasta que corras `flutter create .` (Paso 0).
+Una vez los tengas:
+
+**Android** — en `android/app/src/main/AndroidManifest.xml`, dentro del
+`<activity>` principal, agrega:
+```xml
+<intent-filter android:autoVerify="true">
+    <action android:name="android.intent.action.VIEW" />
+    <category android:name="android.intent.category.DEFAULT" />
+    <category android:name="android.intent.category.BROWSABLE" />
+    <data android:scheme="pixelapp" android:host="pixel" />
+</intent-filter>
+```
+
+**iOS** — en `ios/Runner/Info.plist`, agrega:
+```xml
+<key>CFBundleURLTypes</key>
+<array>
+  <dict>
+    <key>CFBundleURLSchemes</key>
+    <array>
+      <string>pixelapp</string>
+    </array>
+  </dict>
+</array>
+```
+
+El código Dart (`DeepLinkService`) ya está listo y no necesita cambios —
+solo falta este registro nativo del esquema.
+
+### 🛠️ Corrección importante encontrada en el Sprint 8
 El proyecto nunca tuvo `flutter create` ejecutado — faltan las carpetas
 nativas `android/`/`ios/`. Agregué el **Paso 0** al inicio de "Cómo
 correrla" (abajo) con el comando exacto. Sin ese paso, `flutter run` no

@@ -10,6 +10,10 @@ Cuando crees uno de estos endpoints en Django, avísame el nombre final (si
 cambia) y el formato exacto de la respuesta, y actualizo el único método
 correspondiente en `lib/services/` — el resto de la app no se ve afectado.
 
+**Nota Sprint 9:** deep links, offline y analytics no agregan endpoints
+nuevos a esta lista — deep links reutiliza `search_pixel` (ya real), y la
+cola offline reutiliza `toggle_like` / `pixel_comments` (ya listados abajo).
+
 ---
 
 ## ⏳ `POST /api/pixels/toggle_like/`

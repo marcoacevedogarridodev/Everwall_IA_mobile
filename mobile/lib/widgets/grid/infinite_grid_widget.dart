@@ -102,7 +102,7 @@ class _InfiniteGridWidgetState extends State<InfiniteGridWidget> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final spacing = AppConstants.gridCellSpacing;
+        const spacing = AppConstants.gridCellSpacing;
         final columns =
             ((constraints.maxWidth + spacing) / (_targetCellSize + spacing))
                 .floor()

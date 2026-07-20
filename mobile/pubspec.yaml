@@ -47,6 +47,11 @@ dependencies:
   firebase_messaging: ^15.1.3
   package_info_plus: ^8.1.0
 
+  # Deep links, offline support, analytics (Sprint 9, spec 12.2-12.4)
+  app_links: ^6.3.2
+  connectivity_plus: ^6.1.0
+  firebase_analytics: ^11.3.3
+
   # Other
   url_launcher: ^6.2.4
   share_plus: ^7.2.1

@@ -56,6 +56,18 @@ class PixelService {
     return list.map((e) => PixelModel.fromJson(e)).toList();
   }
 
+  /// Resuelve un único píxel por ID reutilizando `search_pixel` (spec 4).
+  /// No hay un endpoint "GET /pixels/{id}/" dedicado en tu lista, así que
+  /// usamos el de búsqueda con el ID exacto como query — necesario para
+  /// abrir Pixel Detail Screen desde un deep link (`pixelapp://pixel/{id}`,
+  /// Sprint 9) que solo trae el ID, no el objeto completo.
+  Future<PixelModel?> getPixelById(String id) async {
+    final results = await searchPixel(id);
+    if (results.isEmpty) return null;
+    final exactMatch = results.where((p) => p.id == id).toList();
+    return exactMatch.isNotEmpty ? exactMatch.first : results.first;
+  }
+
   Future<List<PixelModel>> getMyPixels() async {
     final data = await _api.get('/pixels/my_pixels/');
     final list = _extractList(data);

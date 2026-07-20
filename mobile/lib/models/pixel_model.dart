@@ -57,6 +57,24 @@ class PixelModel {
     );
   }
 
+  /// Usado por OfflineService (Sprint 9) para cachear la grilla en Hive.
+  /// Espejo de fromJson — si agregas un campo allá, agrégalo acá también.
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'x': x,
+      'y': y,
+      'image_url': imageUrl,
+      'owner_name': ownerName,
+      'owner_message': ownerMessage,
+      'likes_count': likesCount,
+      'is_liked': isLikedByMe,
+      'comments_count': commentsCount,
+      'is_owner': isOwner,
+      'created_at': createdAt?.toIso8601String(),
+    };
+  }
+
   PixelModel copyWith({
     int? likesCount,
     bool? isLikedByMe,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,8 @@ import 'providers/chat_provider.dart';
 import 'providers/grid_provider.dart';
 import 'providers/pixel_provider.dart';
 import 'providers/theme_provider.dart';
+import 'services/deep_link_service.dart';
+import 'services/offline_service.dart';
 // Sprint 8 (push notifications) — descomenta tras correr
 // `flutterfire configure` (ver README y notification_service.dart):
 // import 'package:firebase_core/firebase_core.dart';
@@ -22,8 +25,19 @@ Future<void> main() async {
   // Stripe (spec 8.2, Sprint 4): requiere AppConfig.stripePublishableKey
   // con tu clave pública real. Con el placeholder por defecto el SDK se
   // inicializa igual (no rompe el build) pero cualquier pago fallará.
-  Stripe.publishableKey = AppConfig.stripePublishableKey;
-  await Stripe.instance.applySettings();
+  //
+  // ⚠️ Solo en mobile (iOS/Android): el setter `Stripe.publishableKey`
+  // llama internamente a `dart:io Platform.operatingSystem`, que no existe
+  // en la web y tira `Unsupported operation` al cargar la app en Chrome.
+  // El soporte de Stripe para Flutter Web existe pero requiere agregar
+  // el script de Stripe.js a `web/index.html` y usar una config aparte —
+  // no está en el alcance de este sprint. Mientras tanto, en web el flujo
+  // de compra (PixelPaymentScreen) no va a poder cobrar de verdad; el
+  // resto de la app (auth, grid, chat, comentarios, etc.) funciona igual.
+  if (!kIsWeb) {
+    Stripe.publishableKey = AppConfig.stripePublishableKey;
+    await Stripe.instance.applySettings();
+  }
 
   // Firebase / Push notifications (Sprint 8, spec 12.1). Descomenta estas
   // 3 líneas después de:
@@ -31,6 +45,17 @@ Future<void> main() async {
   //   2. flutterfire configure (genera firebase_options.dart + configs nativas)
   // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   // FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+  // Offline support (Sprint 9, spec 12.2): abre las cajas de Hive para
+  // cache de grid + cola de acciones pendientes. Seguro de llamar siempre
+  // (try/catch interno) — si Hive no puede inicializar en alguna
+  // plataforma, la app sigue 100% funcional, solo sin cache offline.
+  await OfflineService.instance.init();
+
+  // Deep links (Sprint 9, spec 12.3): empieza a escuchar
+  // pixelapp://pixel/{id}. La navegación real ocurre una vez hay sesión
+  // activa (ver MainScreen.initState -> consumePendingLink()).
+  DeepLinkService.instance.init();
 
   runApp(
     MultiProvider(
