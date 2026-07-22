@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/routes.dart';
+import '../generated/assets.dart';
 import '../providers/auth_provider.dart';
 import '../theme/animations.dart';
 import '../theme/colors.dart';
@@ -8,10 +9,6 @@ import '../theme/text_styles.dart';
 
 /// Splash screen: fondo negro, logo con efecto de brillo pulsante,
 /// y transición fade a Login tras ~2.2s (spec: 2-3s).
-///
-/// El logo se dibuja con un Icon + gradiente en vez de Image.asset porque
-/// assets/images/logo.png aún no existe en el repo. Cuando agregues el PNG
-/// real, reemplaza `_LogoMark` por `Image.asset(Assets.logo)`.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -108,13 +105,13 @@ class _LogoMark extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ShaderMask(
-          shaderCallback: (bounds) =>
-              AppColors.primaryGradient.createShader(bounds),
-          child: const Icon(
-            Icons.grid_view_rounded,
-            size: 88,
-            color: Colors.white,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Image.asset(
+            Assets.logo,
+            width: 96,
+            height: 96,
+            fit: BoxFit.cover,
           ),
         ),
         const SizedBox(height: 16),

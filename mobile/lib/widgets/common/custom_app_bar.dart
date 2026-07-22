@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../generated/assets.dart';
 import '../../theme/colors.dart';
 import '../../theme/text_styles.dart';
 
@@ -27,11 +28,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: showLogo
           ? Row(
               children: [
-                ShaderMask(
-                  shaderCallback: (bounds) =>
-                      AppColors.primaryGradient.createShader(bounds),
-                  child: const Icon(Icons.grid_view_rounded,
-                      color: Colors.white, size: 26),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(7),
+                  child: Image.asset(
+                    Assets.logo,
+                    width: 26,
+                    height: 26,
+                    fit: BoxFit.cover,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 const Text('Pixel App', style: AppTextStyles.title),

@@ -1,10 +1,9 @@
 /// Rutas a los assets estáticos de la app.
 ///
-/// IMPORTANTE: estos archivos aún NO existen en el repo (assets/images,
-/// assets/animations están vacíos salvo .gitkeep). Agrega los binarios
-/// reales y descomenta la sección `assets:` en pubspec.yaml antes de
-/// usar estas constantes con Image.asset / Lottie.asset, o la app
-/// lanzará una excepción "Unable to load asset" al intentar cargarlos.
+/// `logo.png` ya es un archivo real (assets/images/logo.png) y está
+/// declarado en la sección `assets:` del pubspec.yaml. Los demás (Lottie,
+/// splash background) siguen siendo placeholders — agrégalos y regístralos
+/// en pubspec.yaml antes de usarlos con Image.asset/Lottie.asset.
 class Assets {
   Assets._();
 

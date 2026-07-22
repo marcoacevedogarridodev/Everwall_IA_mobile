@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/routes.dart';
+import '../../generated/assets.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/text_styles.dart';
@@ -72,13 +73,15 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 48),
-                ShaderMask(
-                  shaderCallback: (bounds) =>
-                      AppColors.primaryGradient.createShader(bounds),
-                  child: const Icon(
-                    Icons.grid_view_rounded,
-                    size: 64,
-                    color: Colors.white,
+                Center(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: Image.asset(
+                      Assets.logo,
+                      width: 72,
+                      height: 72,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 40),

@@ -34,9 +34,21 @@ Future<void> main() async {
   // no está en el alcance de este sprint. Mientras tanto, en web el flujo
   // de compra (PixelPaymentScreen) no va a poder cobrar de verdad; el
   // resto de la app (auth, grid, chat, comentarios, etc.) funciona igual.
+  //
+  // ⚠️ En Android, requiere que MainActivity extienda
+  // FlutterFragmentActivity (no FlutterActivity) — ver
+  // android/app/src/main/kotlin/.../MainActivity.kt y el README. El
+  // try/catch de acá es una red de seguridad: si esto falla por cualquier
+  // razón (falta ese cambio nativo, red, etc.), la app igual arranca en
+  // vez de quedarse colgada antes de runApp().
   if (!kIsWeb) {
-    Stripe.publishableKey = AppConfig.stripePublishableKey;
-    await Stripe.instance.applySettings();
+    try {
+      Stripe.publishableKey = AppConfig.stripePublishableKey;
+      await Stripe.instance.applySettings();
+    } catch (_) {
+      // El flujo de compra (PixelPaymentScreen) fallará hasta que se
+      // resuelva la causa real, pero el resto de la app sigue funcionando.
+    }
   }
 
   // Firebase / Push notifications (Sprint 8, spec 12.1). Descomenta estas

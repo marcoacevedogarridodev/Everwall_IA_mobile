@@ -14,23 +14,30 @@ class AppConfig {
 
   /// URL base del API REST. Sobreescribible por --dart-define=API_BASE_URL=...
   ///
-  /// IMPORTANTE: aún no tenemos el dominio real del backend (solo se
-  /// compartieron las rutas relativas de Django, ej. api/auth/login/).
-  /// Reemplaza el valor de abajo por tu dominio real, por ejemplo:
-  ///   'https://api.pixelapp.com/api'   (producción)
-  ///   'http://10.0.2.2:8000/api'       (Django local + emulador Android)
-  ///   'http://localhost:8000/api'      (Django local + iOS simulator/web)
+  /// Por ahora apunta a tu backend Django local en Docker Compose
+  /// (puerto 8000, el default de Django). Para que tu celular físico
+  /// (conectado por USB) pueda llegar al `localhost:8000` de tu PC, corre
+  /// UNA VEZ por sesión de USB (antes de `flutter run`, o mientras corre):
+  ///   adb reverse tcp:8000 tcp:8000
+  /// Esto redirige el localhost del celular hacia el de tu PC a través
+  /// del cable — más confiable que usar la IP de WiFi.
+  ///
+  /// Si tu docker-compose expone Django en otro puerto, cambia el 8000 de
+  /// abajo Y el del comando `adb reverse` para que coincidan.
+  ///
+  /// Cuando despliegues el backend de verdad, cambia esto por tu dominio,
   /// o pásalo sin tocar código:
-  ///   flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api
+  ///   flutter run --dart-define=API_BASE_URL=https://api.tudominio.com/api
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://tu-api.com/api',
+    defaultValue: 'http://localhost:8000/api',
   );
 
   /// URL base del servidor WebSocket (chat en tiempo real, Sprint 6).
+  /// Mismo esquema que apiBaseUrl: local vía adb reverse por ahora.
   static const String wsBaseUrl = String.fromEnvironment(
     'WS_BASE_URL',
-    defaultValue: 'wss://tu-api.com/ws',
+    defaultValue: 'ws://localhost:8000/ws',
   );
 
   /// Clave pública de Stripe (Sprint 4).

@@ -4,22 +4,37 @@ App estilo Instagram/Facebook con grilla infinita de píxeles tipo Google Maps,
 auth completo, compra de píxeles, likes, comentarios, mensajes y dark mode
 premium.
 
-## ⚠️ ANTES DE CORRER: configura tu URL real
+## 🎨 Ícono real + conexión a tu backend local (Docker)
 
-Edita `lib/config/app_config.dart` y reemplaza `apiBaseUrl` por tu dominio
-real (o pásalo por `--dart-define`, ver comentario en ese archivo). Ejemplos
-según dónde corres el backend Django:
+- **Ícono**: `assets/images/logo.png` ya es tu ícono real (Splash, Login,
+  app bar de la Grid). Para que también sea el ícono del launcher del
+  celular, corre una vez:
+  ```bash
+  flutter pub get
+  dart run flutter_launcher_icons
+  ```
+  Después desinstala la app del celular y vuelve a correr `flutter run`
+  (Android cachea el ícono viejo y no siempre lo actualiza con hot restart).
 
-```bash
-# Backend Django local + emulador Android
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api
+- **Backend local en Docker**: `AppConfig.apiBaseUrl` apunta por defecto a
+  `http://localhost:8000/api` (puerto estándar de Django). Para que tu
+  **celular físico** (USB) llegue al backend que corre en tu PC, corre una
+  vez por cada reconexión del cable:
+  ```bash
+  adb reverse tcp:8000 tcp:8000
+  ```
+  Redirige el `localhost:8000` del celular al de tu PC vía USB — más
+  confiable que la IP de WiFi (no depende de red ni firewall). Si tu
+  `docker-compose.yml` usa otro puerto, cámbialo acá Y en
+  `lib/config/app_config.dart` (`apiBaseUrl`).
 
-# Backend Django local + iOS simulator / Flutter web
-flutter run --dart-define=API_BASE_URL=http://localhost:8000/api
-
-# Backend desplegado
-flutter run --dart-define=API_BASE_URL=https://tu-dominio-real.com/api
-```
+  Si en algún momento pruebas en el **emulador** de Android Studio en vez
+  del celular físico, `adb reverse` no aplica — usa en su lugar:
+  ```bash
+  flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api
+  ```
+  (`10.0.2.2` es el alias especial que usa el emulador para referirse al
+  `localhost` de tu PC).
 
 ## ✅ Estado actual: Sprint 9 completado (Sprints 1-8 incluidos)
 
