@@ -13,6 +13,8 @@ dependencies:
   # State Management
   provider: ^6.1.1
 
+  flutter_native_splash: ^2.4.0
+
   # Networking
   dio: ^5.4.0
   socket_io_client: ^2.0.3
@@ -62,7 +64,6 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.1
-  flutter_native_splash: ^2.4.0
   flutter_launcher_icons: ^0.13.1
   build_runner: ^2.4.8
   hive_generator: ^2.0.1
@@ -88,6 +89,45 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/logo.png"
+  image_path: "assets/images/splash.png"
   min_sdk_android: 21
 
+# Splash screen NATIVO (lo que se ve mientras Android/iOS todavía están
+# arrancando, ANTES de que exista cualquier widget de Flutter — ni
+# siquiera `SplashScreen` de `lib/screens/splash_screen.dart` ha corrido
+# todavía en ese momento). Está configurado para verse IDÉNTICO al
+# `SplashScreen` de Flutter (mismo fondo negro, mismo ícono) para que no
+# haya salto entre ambos — ver `NATIVE_SPLASH_SETUP.md` para el detalle
+# completo y el paso a paso.
+#
+# Después de `flutter pub get` (y de tener `assets/images/logo.png` real,
+# ver README), genera los assets nativos con:
+#   dart run flutter_native_splash:create
+# (o `flutter pub run flutter_native_splash:create` en versiones viejas)
+flutter_native_splash:
+  color: "#000000"
+  color_dark: "#000000"
+  image: assets/images/splash.png
+  image_dark: assets/images/splash.png
+
+  # Sin texto, sin branding adicional — mismo criterio que el
+  # SplashScreen de Flutter ("solo un ícono chico centrado sobre negro").
+  fullscreen: true
+
+  android: true
+  ios: true
+  web: false
+
+  # Android 12+ usa la API de splash screen del propio sistema (distinta
+  # a la de versiones anteriores), con sus propias reglas de tamaño: el
+  # ícono se recorta a un círculo de ~240dp con ~160dp de contenido
+  # visible en el centro. Se declara aparte para que también quede fondo
+  # negro + el mismo logo, en vez de caer al ícono del launcher por
+  # defecto (que se ve distinto y rompe la ilusión de "un solo splash").
+  android_12:
+    color: "#000000"
+    color_dark: "#000000"
+    image: assets/images/splash.png
+    image_dark: assets/images/splash.png
+    icon_background_color: "#000000"
+    icon_background_color_dark: "#000000"

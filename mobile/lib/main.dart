@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:provider/provider.dart';
 import 'app.dart';
@@ -20,7 +21,16 @@ import 'services/offline_service.dart';
 
 /// Punto de entrada.
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+
+  // Mantiene visible el splash NATIVO (el mismo que ya se ve al tocar el
+  // ícono de la app, configurado en pubspec.yaml -> flutter_native_splash)
+  // hasta que llamemos a FlutterNativeSplash.remove() manualmente desde
+  // SplashScreen, una vez terminó checkAuthStatus(). Así NUNCA se ven dos
+  // splashes distintos (nativo + uno propio de Flutter) — solo existe el
+  // nativo, que se queda el tiempo justo y necesario, y desaparece
+  // revelando directamente Login o Main.
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   // Stripe (spec 8.2, Sprint 4): requiere AppConfig.stripePublishableKey
   // con tu clave pública real. Con el placeholder por defecto el SDK se

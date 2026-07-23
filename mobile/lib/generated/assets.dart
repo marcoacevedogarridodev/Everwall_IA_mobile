@@ -8,6 +8,7 @@ class Assets {
   Assets._();
 
   static const String logo = 'assets/images/logo.png';
+  static const String icon = 'assets/images/icon.png';
   static const String logoAnimated = 'assets/images/logo_animated.json';
   static const String splashBackground = 'assets/images/splash_background.png';
   static const String loadingAnimation = 'assets/animations/loading_animation.json';
