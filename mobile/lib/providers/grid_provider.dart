@@ -30,6 +30,11 @@ class GridProvider extends ChangeNotifier {
   bool get isOffline => _isOffline;
   String? get error => _error;
 
+  List<String> get loadedImageUrls => _pixels.values
+      .map((p) => p.imageUrl)
+      .where((url) => url.isNotEmpty)
+      .toList();
+
   PixelModel? pixelAt(int x, int y) => _pixels['$x,$y'];
 
   /// Llamado por InfiniteGridWidget con la región visible actual (más un

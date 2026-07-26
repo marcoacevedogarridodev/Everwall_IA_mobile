@@ -8,6 +8,8 @@ import '../../providers/pixel_provider.dart';
 import 'pixel_card_widget.dart';
 import 'pixel_overlay_widget.dart';
 
+import 'rotating_pixel_card_widget.dart';
+
 /// Grilla infinita de píxeles.
 ///
 /// DECISIÓN DE DISEÑO (léela antes de tocar este archivo): el spec original
@@ -120,6 +122,7 @@ class _InfiniteGridWidgetState extends State<InfiniteGridWidget> {
 
         return Consumer<GridProvider>(
           builder: (context, gridProvider, _) {
+            final imagePool = gridProvider.loadedImageUrls;
             return RefreshIndicator(
               color: Colors.white,
               onRefresh: () async {
@@ -154,7 +157,11 @@ class _InfiniteGridWidgetState extends State<InfiniteGridWidget> {
                       },
                       onLongPress:
                           pixel != null ? () => _openOverlay(pixel) : null,
-                      child: PixelCardWidget(pixel: pixel, size: _cellSize),
+                      child: RotatingPixelCardWidget(
+                        pixel: pixel,
+                        size: _cellSize,
+                        imagePool: imagePool,
+                      ),
                     ),
                   );
                 },

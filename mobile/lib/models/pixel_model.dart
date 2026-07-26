@@ -94,4 +94,22 @@ class PixelModel {
       createdAt: createdAt,
     );
   }
+  
+  PixelModel copyWithImageUrl(String newImageUrl) {
+    return PixelModel(
+      id: id,
+      x: x,
+      y: y,
+      imageUrl: newImageUrl,
+      ownerName: ownerName,
+      ownerMessage: ownerMessage,
+      likesCount: likesCount,
+      isLikedByMe: isLikedByMe,
+      commentsCount: commentsCount,
+      isOwner: isOwner,
+      createdAt: createdAt,
+    );
+  }
 }
+
+

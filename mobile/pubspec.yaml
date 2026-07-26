@@ -71,8 +71,6 @@ flutter:
   assets:
     - assets/images/
 
- `flutter pub run flutter_launcher_icons` en versiones más viejas)
-
 flutter_launcher_icons:
   android: true
   ios: true
