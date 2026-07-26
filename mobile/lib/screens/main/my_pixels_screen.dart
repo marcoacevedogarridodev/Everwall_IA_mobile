@@ -106,7 +106,7 @@ class _MyPixelsScreenState extends State<MyPixelsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(title: 'Mis Píxeles'),
+      appBar: const CustomAppBar(title: 'Mis píxeles'),
       body: RefreshIndicator(
         color: Colors.white,
         onRefresh: _load,

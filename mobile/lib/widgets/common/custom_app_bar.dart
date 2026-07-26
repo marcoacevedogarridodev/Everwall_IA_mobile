@@ -38,7 +38,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Text('Pixel App', style: AppTextStyles.title),
+                const Text('EverWall', style: AppTextStyles.title),
               ],
             )
           : Text(title ?? '', style: AppTextStyles.title),

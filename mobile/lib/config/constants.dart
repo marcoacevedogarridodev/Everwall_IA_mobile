@@ -3,7 +3,7 @@
 class AppConstants {
   AppConstants._();
 
-  static const String appName = 'Pixel App';
+  static const String appName = 'EverWall';
 
   // Almacenamiento local (keys)
   static const String keyAccessToken = 'access_token';

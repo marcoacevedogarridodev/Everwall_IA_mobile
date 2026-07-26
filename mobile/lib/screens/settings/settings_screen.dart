@@ -81,7 +81,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             secondary: const Icon(Icons.dark_mode_outlined, color: AppColors.textSecondary),
             title: const Text('Modo oscuro'),
             subtitle: const Text(
-              'Pixel App está pensada para dark mode premium',
+              'EverWall está pensada para dark mode premium',
               style: AppTextStyles.caption,
             ),
             value: isDark,

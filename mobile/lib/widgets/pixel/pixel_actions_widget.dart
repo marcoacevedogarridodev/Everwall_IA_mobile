@@ -54,7 +54,7 @@ class PixelActionsWidget extends StatelessWidget {
           label: 'Compartir',
           onTap: () {
             Share.share(
-              '¡Mira este píxel de ${pixel.ownerName} en Pixel App! '
+              '¡Mira este píxel de ${pixel.ownerName} en EverWall! '
               'pixelapp://pixel/${pixel.id}',
             );
           },
