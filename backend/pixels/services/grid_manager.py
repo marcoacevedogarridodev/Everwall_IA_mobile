@@ -2,6 +2,8 @@
 from django.core.cache import cache
 from ..models import Pixel, PixelGridConfig
 import logging
+from django.conf import settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +39,10 @@ class GridManager:
         for pixel in occupied:
             pixel_data = dict(pixel)
             if request and pixel.get('main_image'):
-                pixel_data['image_url'] = request.build_absolute_uri(pixel['main_image'])
+                # main_image es una ruta relativa (ej: pixels/2026/07/27/4.jpg)
+                # hay que anteponer MEDIA_URL y construir la URL absoluta desde la raíz
+                media_path = f"{settings.MEDIA_URL}{pixel['main_image']}"
+                pixel_data['image_url'] = request.build_absolute_uri(media_path)
             occupied_list.append(pixel_data)
 
         result = {
