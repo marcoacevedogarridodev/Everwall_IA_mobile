@@ -34,7 +34,7 @@ class RotatingPixelCardWidget extends StatefulWidget {
 
 class _RotatingPixelCardWidgetState extends State<RotatingPixelCardWidget> {
   static const _interval = Duration(seconds: 3);
-  static const _fadeDuration = Duration(milliseconds: 500);
+  static const _fadeDuration = Duration(milliseconds: 700);
 
   final _random = Random();
   Timer? _timer;

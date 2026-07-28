@@ -28,21 +28,21 @@ class PixelService {
   final _api = ApiService.instance;
 
   Future<List<PixelModel>> getGridStatus({
-    required int xMin,
-    required int xMax,
-    required int yMin,
-    required int yMax,
-  }) async {
-    final data = await _api.get('/pixels/grid_status/', query: {
-      'x_min': xMin,
-      'x_max': xMax,
-      'y_min': yMin,
-      'y_max': yMax,
-    });
+  required int xMin,
+  required int xMax,
+  required int yMin,
+  required int yMax,
+}) async {
+  final data = await _api.get('/pixels/grid_status/', query: {
+    'x_min': xMin,
+    'x_max': xMax,
+    'y_min': yMin,
+    'y_max': yMax,
+  });
 
-    final list = _extractList(data);
-    return list.map((e) => PixelModel.fromJson(e)).toList();
-  }
+  final list = _extractOccupiedPositions(data);
+  return list.map((e) => PixelModel.fromJson(e)).toList();
+}
 
   Future<List<PixelModel>> getRecentPixels() async {
     final data = await _api.get('/pixels/recent_pixels/');
@@ -198,6 +198,19 @@ class PixelService {
 
     final commentJson = data['comment'] as Map<String, dynamic>? ?? data;
     return CommentModel.fromJson(commentJson, currentUserId: currentUserId);
+  }
+
+  /// DRF a veces pagina (`{ results: [...] }`) y a veces devuelve la lista
+  /// directa (`[...]`). Soportamos ambos formatos acá para no repetir esta
+  /// lógica en cada método.
+  List<Map<String, dynamic>> _extractOccupiedPositions(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      final inner = data['data'];
+      if (inner is Map<String, dynamic> && inner['occupied_positions'] is List) {
+        return (inner['occupied_positions'] as List).cast<Map<String, dynamic>>();
+      }
+    }
+    return _extractList(data); // fallback por si el formato cambia
   }
 
   /// DRF a veces pagina (`{ results: [...] }`) y a veces devuelve la lista

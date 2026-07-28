@@ -1,14 +1,14 @@
 """
-Management command para sembrar los primeros pixeles "fundacionales" del proyecto,
+Management command para sembrar pixeles "fundacionales" del proyecto,
 sin pasar por el flujo de compra (Stripe / frontend).
 
-Uso:
+Uso básico (usa 1.jpg, 2.jpg, 3.jpg, 4.jpg por defecto):
     python manage.py seed_pixels
 
-Por defecto busca las imágenes en backend/seed_images/1.jpg, 2.jpg, 3.jpg, 4.jpg
-y las coloca en las coordenadas (0,0), (1,0), (2,0), (3,0).
+Uso con archivos específicos:
+    python manage.py seed_pixels --files 5.jpg,6.jpg,7.jpg --start-x 14 --y 0
 
-Puedes personalizar carpeta y coordenadas con argumentos, ver --help.
+Por defecto busca las imágenes en backend/seed_images/.
 """
 import os
 from django.conf import settings
@@ -17,6 +17,7 @@ from django.core.files import File
 from django.utils import timezone
 
 from pixels.models import Pixel
+from pixels.services.grid_manager import GridManager
 
 
 class Command(BaseCommand):
@@ -27,13 +28,19 @@ class Command(BaseCommand):
             '--folder',
             type=str,
             default=str(settings.BASE_DIR / 'seed_images'),
-            help='Carpeta donde están las imágenes 1.jpg, 2.jpg, 3.jpg, 4.jpg (default: backend/seed_images)',
+            help='Carpeta donde están las imágenes (default: backend/seed_images)',
+        )
+        parser.add_argument(
+            '--files',
+            type=str,
+            default='1.jpg,2.jpg,3.jpg,4.jpg',
+            help='Lista de archivos separados por coma, ej: 5.jpg,6.jpg,7.jpg',
         )
         parser.add_argument(
             '--owner-email',
             type=str,
             default='founder@everwall.com',
-            help='Email que se asignará a estos pixeles (default: founder@everwall.com)',
+            help='Email que se asignará a estos pixeles',
         )
         parser.add_argument(
             '--owner-name',
@@ -67,12 +74,16 @@ class Command(BaseCommand):
         y = options['y']
         dry_run = options['dry_run']
 
-        filenames = ['1.jpg', '2.jpg', '3.jpg', '4.jpg']
+        filenames = [f.strip() for f in options['files'].split(',') if f.strip()]
+
+        if not filenames:
+            raise CommandError('No se especificaron archivos válidos en --files')
 
         if not os.path.isdir(folder):
             raise CommandError(f'No existe la carpeta: {folder}')
 
         self.stdout.write(self.style.SUCCESS(f'=== Sembrando pixeles desde {folder} ==='))
+        self.stdout.write(f'Archivos: {", ".join(filenames)}')
         if dry_run:
             self.stdout.write(self.style.WARNING('MODO DRY-RUN: no se guardará nada'))
 
@@ -120,6 +131,9 @@ class Command(BaseCommand):
             )
 
         if not dry_run:
+            if created_count > 0:
+                GridManager.invalidate_cache()
+                self.stdout.write(self.style.SUCCESS('Caché de grid_status invalidado'))
             self.stdout.write(self.style.SUCCESS(f'\n=== Listo: {created_count} pixeles creados ==='))
         else:
             self.stdout.write(self.style.WARNING('\n=== Dry-run finalizado, nada fue guardado ==='))
