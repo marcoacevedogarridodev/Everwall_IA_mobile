@@ -37,6 +37,25 @@ class GridProvider extends ChangeNotifier {
 
   PixelModel? pixelAt(int x, int y) => _pixels['$x,$y'];
 
+  /// Lista de píxeles ordenados secuencialmente (por fecha de creación si
+  /// está disponible; si no, por y y luego x) — usada por el layout tipo
+  /// galería de InfiniteGridWidget, que ya no dibuja cada píxel en su
+  /// coordenada (x,y) real sino que los va acomodando en orden, columna
+  /// por columna, fila por fila, sin huecos por posiciones vacías del
+  /// mapa. La coordenada real sigue viva como metadata (Pixel Detail),
+  /// solo deja de determinar dónde se pinta en esta grilla.
+  List<PixelModel> get pixelsSequential {
+    final list = _pixels.values.toList();
+    list.sort((a, b) {
+      if (a.createdAt != null && b.createdAt != null) {
+        return a.createdAt!.compareTo(b.createdAt!);
+      }
+      if (a.y != b.y) return a.y.compareTo(b.y);
+      return a.x.compareTo(b.x);
+    });
+    return list;
+  }
+
   /// Llamado por InfiniteGridWidget con la región visible actual (más un
   /// margen/buffer). Debounced para no disparar una request por cada pixel
   /// de scroll durante un pan rápido.

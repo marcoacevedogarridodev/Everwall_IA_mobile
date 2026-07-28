@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/constants.dart';
@@ -5,26 +7,20 @@ import '../../config/routes.dart';
 import '../../models/pixel_model.dart';
 import '../../providers/grid_provider.dart';
 import '../../providers/pixel_provider.dart';
-import 'pixel_card_widget.dart';
 import 'pixel_overlay_widget.dart';
 
 import 'rotating_pixel_card_widget.dart';
 
-/// Grilla infinita de píxeles.
+/// Grilla de píxeles comprados, en orden secuencial tipo galería
+/// (Instagram-style): cada celda visual representa uno de los píxeles
+/// comprados, NO su coordenada (x,y) real en el mapa 100x100 del backend
+/// — así ningún píxel queda "fuera del ancho visible" del dispositivo.
 ///
-/// DECISIÓN DE DISEÑO (léela antes de tocar este archivo): el spec original
-/// pide una grilla "tipo Google Maps" pannable libremente en las 4
-/// direcciones. Eso requiere un canvas virtual 2D con su propio motor de
-/// scroll/zoom — bastante más ingeniería (World-to-screen transform, tiles,
-/// zoom con recentrado, etc). Para este sprint implementé la interpretación
-/// que además calza con el mockup ASCII del spec (grilla de N columnas
-/// fijas, `5x5` en el ejemplo): **scroll infinito vertical** con columnas
-/// fijas según el ancho de pantalla — el eje X está acotado a las columnas
-/// visibles y el eje Y crece sin límite mientras el usuario baja. Esto es
-/// perfomante, simple de mantener y ya cumple "scroll infinito con lazy
-/// loading + cache" (spec 15.1). Si de verdad necesitas paneo libre 2D como
-/// Google Maps, es un widget aparte a nivel de esfuerzo de un sprint propio
-/// — avísame y lo armamos.
+/// Efecto de rotación (pared viva): cada [_rotationInterval] se genera una
+/// nueva PERMUTACIÓN de la misma lista de píxeles y se reasigna qué píxel
+/// va en cada celda. Al ser una permutación (biyección) de un mismo
+/// conjunto, es matemáticamente imposible que dos celdas muestren la
+/// misma imagen a la vez, y con el tiempo todas van rotando de posición.
 class InfiniteGridWidget extends StatefulWidget {
   const InfiniteGridWidget({super.key});
 
@@ -34,46 +30,91 @@ class InfiniteGridWidget extends StatefulWidget {
 
 class _InfiniteGridWidgetState extends State<InfiniteGridWidget> {
   final ScrollController _scrollController = ScrollController();
+  static const _rotationInterval = Duration(seconds: 4);
 
   static const double _targetCellSize = 100;
-  static const int _rowBuffer = 6; // filas extra a precargar arriba/abajo
 
   int _columns = 4;
   double _cellSize = _targetCellSize;
 
+  final _random = Random();
+  Timer? _rotationTimer;
+
+  /// Orden actualmente mostrado en pantalla — una permutación de los
+  /// píxeles reales. Se resetea cada vez que cambia el conjunto de
+  /// píxeles (nueva compra, refresh) y se vuelve a barajar cada
+  /// [_rotationInterval].
+  List<PixelModel> _displayedPixels = [];
+
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
-    // Primer fetch tras el primer frame, cuando ya conocemos el ancho real.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _requestVisibleRows());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _requestAllPixels());
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
+    _rotationTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _onScroll() => _requestVisibleRows();
-
-  void _requestVisibleRows() {
-    if (!_scrollController.hasClients) return;
-
-    final rowHeight = _cellSize + AppConstants.gridCellSpacing;
-    final firstVisibleRow =
-        (_scrollController.offset / rowHeight).floor().clamp(0, 1 << 30);
-    final viewportRows =
-        (_scrollController.position.viewportDimension / rowHeight).ceil();
-    final lastVisibleRow = firstVisibleRow + viewportRows;
-
+  /// Pide el mapa completo una sola vez (spec: 100x100). Si en el futuro
+  /// hay muchos más píxeles reales, esto se puede paginar por lotes desde
+  /// el backend en vez de pedir todo el rango de golpe.
+  void _requestAllPixels() {
     context.read<GridProvider>().requestViewport(
           xMin: 0,
-          xMax: _columns - 1,
-          yMin: (firstVisibleRow - _rowBuffer).clamp(0, 1 << 30),
-          yMax: lastVisibleRow + _rowBuffer,
+          xMax: 99,
+          yMin: 0,
+          yMax: 99,
         );
+  }
+
+  bool _sameIds(List<PixelModel> a, List<PixelModel> b) {
+    if (a.length != b.length) return false;
+    final idsA = a.map((p) => p.id).toSet();
+    final idsB = b.map((p) => p.id).toSet();
+    return idsA.length == idsB.length && idsA.difference(idsB).isEmpty;
+  }
+
+  bool _sameOrder(List<PixelModel> a, List<PixelModel> b) {
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id) return false;
+    }
+    return true;
+  }
+
+  void _restartRotationTimer() {
+    _rotationTimer?.cancel();
+    if (_displayedPixels.length < 2) return; // nada que rotar
+
+    // Rotación parcial: cada tick intercambia solo 1-2 pares al azar (no
+    // se re-baraja toda la grilla). El resto de las celdas queda quieto,
+    // así el efecto se siente como "de vez en cuando dos fotos cambian de
+    // lugar" en vez de un refresh completo simultáneo — mucho más sutil y
+    // profesional que un shuffle total.
+    _rotationTimer = Timer.periodic(_rotationInterval, (_) {
+      if (!mounted) return;
+      setState(() {
+        final updated = List<PixelModel>.from(_displayedPixels);
+        final swaps = _displayedPixels.length >= 6 ? 2 : 1;
+
+        for (var s = 0; s < swaps; s++) {
+          final i = _random.nextInt(updated.length);
+          int j;
+          do {
+            j = _random.nextInt(updated.length);
+          } while (j == i);
+
+          final temp = updated[i];
+          updated[i] = updated[j];
+          updated[j] = temp;
+        }
+
+        _displayedPixels = updated;
+      });
+    });
   }
 
   void _openOverlay(PixelModel pixel) {
@@ -91,13 +132,10 @@ class _InfiniteGridWidgetState extends State<InfiniteGridWidget> {
     Navigator.of(context).pushNamed(AppRoutes.pixelDetail, arguments: pixel);
   }
 
-  /// Tap sobre una celda vacía -> inicia el flujo de compra con esa
-  /// posición pre-cargada (Sprint 4, spec 8.1).
-  void _onEmptyCellTap(int x, int y) {
-    Navigator.of(context).pushNamed(
-      AppRoutes.pixelPurchase,
-      arguments: {'x': x, 'y': y},
-    );
+  /// Tap en la celda "vacía" al final de la secuencia -> inicia el flujo
+  /// de compra genérico (el usuario elige/confirma la posición ahí).
+  void _onBuyNextTap() {
+    Navigator.of(context).pushNamed(AppRoutes.pixelPurchase);
   }
 
   @override
@@ -112,22 +150,36 @@ class _InfiniteGridWidgetState extends State<InfiniteGridWidget> {
         final cellSize =
             (constraints.maxWidth - spacing * (columns - 1)) / columns;
 
-        // Si cambió el layout (rotación, resize), recalculamos y re-pedimos.
         if (columns != _columns || (cellSize - _cellSize).abs() > 0.5) {
           _columns = columns;
           _cellSize = cellSize;
-          WidgetsBinding.instance
-              .addPostFrameCallback((_) => _requestVisibleRows());
         }
 
         return Consumer<GridProvider>(
           builder: (context, gridProvider, _) {
+            final sequential = gridProvider.pixelsSequential;
+
+            // El conjunto real de píxeles cambió (primera carga, nueva
+            // compra, refresh) — resincroniza el orden mostrado y
+            // reinicia el timer de rotación. Diferido a post-frame porque
+            // no se puede hacer setState durante el build de este widget.
+            if (!_sameIds(sequential, _displayedPixels)) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                setState(() => _displayedPixels = List.of(sequential));
+                _restartRotationTimer();
+              });
+            }
+
+            final gridSource =
+                _displayedPixels.isEmpty ? sequential : _displayedPixels;
             final imagePool = gridProvider.loadedImageUrls;
+
             return RefreshIndicator(
               color: Colors.white,
               onRefresh: () async {
                 gridProvider.reset();
-                _requestVisibleRows();
+                _requestAllPixels();
               },
               child: GridView.builder(
                 controller: _scrollController,
@@ -138,13 +190,11 @@ class _InfiniteGridWidgetState extends State<InfiniteGridWidget> {
                   crossAxisSpacing: spacing,
                   childAspectRatio: 1,
                 ),
-                // Techo alto pero finito: permite scroll "infinito" en la
-                // práctica sin que GridView necesite itemCount nulo.
-                itemCount: _columns * 200000,
+                // +1: slot final vacío = "comprar el siguiente píxel".
+                itemCount: gridSource.length + 1,
                 itemBuilder: (context, index) {
-                  final x = index % _columns;
-                  final y = index ~/ _columns;
-                  final pixel = gridProvider.pixelAt(x, y);
+                  final pixel =
+                      index < gridSource.length ? gridSource[index] : null;
 
                   return RepaintBoundary(
                     child: GestureDetector(
@@ -152,7 +202,7 @@ class _InfiniteGridWidgetState extends State<InfiniteGridWidget> {
                         if (pixel != null) {
                           _openDetail(pixel);
                         } else {
-                          _onEmptyCellTap(x, y);
+                          _onBuyNextTap();
                         }
                       },
                       onLongPress:
@@ -160,7 +210,6 @@ class _InfiniteGridWidgetState extends State<InfiniteGridWidget> {
                       child: RotatingPixelCardWidget(
                         pixel: pixel,
                         size: _cellSize,
-                        imagePool: imagePool,
                       ),
                     ),
                   );

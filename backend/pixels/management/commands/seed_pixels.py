@@ -1,27 +1,32 @@
 """
-Management command para sembrar pixeles "fundacionales" del proyecto,
-sin pasar por el flujo de compra (Stripe / frontend).
+Management command para BORRAR todos los pixeles/sesiones/logs existentes
+y volver a sembrar las imágenes fundacionales desde cero.
 
-Uso básico (usa 1.jpg, 2.jpg, 3.jpg, 4.jpg por defecto):
-    python manage.py seed_pixels
+Uso:
+    python manage.py reset_and_seed
 
-Uso con archivos específicos:
-    python manage.py seed_pixels --files 5.jpg,6.jpg,7.jpg --start-x 14 --y 0
+Por defecto:
+    - Borra TODOS los Pixel, PixelPurchaseSession y PixelViewLog
+    - Borra los archivos físicos en media/pixels/
+    - Invalida el caché de grid_status
+    - Siembra 1.jpg ... 7.jpg desde backend/seed_images/ en (0,0) a (6,0)
 
-Por defecto busca las imágenes en backend/seed_images/.
+¡CUIDADO! Esto borra TODO, incluidos pixeles comprados de verdad.
+Úsalo solo en desarrollo.
 """
 import os
+import shutil
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.core.files import File
 from django.utils import timezone
 
-from pixels.models import Pixel
+from pixels.models import Pixel, PixelPurchaseSession, PixelViewLog
 from pixels.services.grid_manager import GridManager
 
 
 class Command(BaseCommand):
-    help = 'Crea pixeles fundacionales a partir de imágenes locales, sin pasar por compra/Stripe'
+    help = 'Borra todos los pixeles existentes y vuelve a sembrar las imágenes desde cero'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -33,37 +38,38 @@ class Command(BaseCommand):
         parser.add_argument(
             '--files',
             type=str,
-            default='1.jpg,2.jpg,3.jpg,4.jpg',
-            help='Lista de archivos separados por coma, ej: 5.jpg,6.jpg,7.jpg',
+            default='1.jpg,2.jpg,3.jpg,4.jpg,5.jpg,6.jpg,7.jpg',
+            help='Lista de archivos separados por coma',
         )
         parser.add_argument(
             '--owner-email',
             type=str,
             default='founder@everwall.com',
-            help='Email que se asignará a estos pixeles',
         )
         parser.add_argument(
             '--owner-name',
             type=str,
             default='Everwall',
-            help='Nombre del dueño mostrado en el pixel',
         )
         parser.add_argument(
             '--start-x',
             type=int,
             default=0,
-            help='Coordenada X inicial (default: 0)',
         )
         parser.add_argument(
             '--y',
             type=int,
             default=0,
-            help='Coordenada Y para todos los pixeles (default: 0)',
         )
         parser.add_argument(
-            '--dry-run',
+            '--keep-media-files',
             action='store_true',
-            help='Muestra qué se crearía sin guardar nada',
+            help='No borrar los archivos físicos en media/pixels/ (solo borra registros de la DB)',
+        )
+        parser.add_argument(
+            '--yes',
+            action='store_true',
+            help='Confirma el borrado sin preguntar (necesario para correr sin input interactivo)',
         )
 
     def handle(self, *args, **options):
@@ -72,21 +78,52 @@ class Command(BaseCommand):
         owner_name = options['owner_name']
         start_x = options['start_x']
         y = options['y']
-        dry_run = options['dry_run']
+        keep_media_files = options['keep_media_files']
+        confirmed = options['yes']
 
         filenames = [f.strip() for f in options['files'].split(',') if f.strip()]
-
         if not filenames:
             raise CommandError('No se especificaron archivos válidos en --files')
 
         if not os.path.isdir(folder):
             raise CommandError(f'No existe la carpeta: {folder}')
 
-        self.stdout.write(self.style.SUCCESS(f'=== Sembrando pixeles desde {folder} ==='))
-        self.stdout.write(f'Archivos: {", ".join(filenames)}')
-        if dry_run:
-            self.stdout.write(self.style.WARNING('MODO DRY-RUN: no se guardará nada'))
+        pixel_count = Pixel.objects.count()
+        session_count = PixelPurchaseSession.objects.count()
+        log_count = PixelViewLog.objects.count()
 
+        self.stdout.write(self.style.WARNING('=== RESET COMPLETO DE PIXELES ==='))
+        self.stdout.write(
+            f'Se van a borrar: {pixel_count} pixeles, {session_count} sesiones, {log_count} logs de vistas'
+        )
+
+        if not confirmed:
+            answer = input('¿Confirmas el borrado? Escribe "SI" para continuar: ')
+            if answer.strip().upper() != 'SI':
+                self.stdout.write(self.style.ERROR('Cancelado, no se borró nada'))
+                return
+
+        # 1. Borrar registros de la base de datos
+        PixelViewLog.objects.all().delete()
+        PixelPurchaseSession.objects.all().delete()
+        Pixel.objects.all().delete()
+        self.stdout.write(self.style.SUCCESS('  -> Registros de base de datos eliminados'))
+
+        # 2. Borrar archivos físicos en media/pixels/
+        if not keep_media_files:
+            pixels_media_dir = os.path.join(settings.MEDIA_ROOT, 'pixels')
+            if os.path.isdir(pixels_media_dir):
+                shutil.rmtree(pixels_media_dir)
+                self.stdout.write(self.style.SUCCESS(f'  -> Carpeta {pixels_media_dir} eliminada'))
+            else:
+                self.stdout.write('  -> No existía carpeta media/pixels/, nada que borrar')
+
+        # 3. Invalidar caché
+        GridManager.invalidate_cache()
+        self.stdout.write(self.style.SUCCESS('  -> Caché de grid_status invalidado'))
+
+        # 4. Volver a sembrar
+        self.stdout.write(self.style.SUCCESS(f'\n=== Sembrando {len(filenames)} imágenes desde {folder} ==='))
         created_count = 0
 
         for idx, filename in enumerate(filenames):
@@ -97,22 +134,11 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR(f'  [SKIP] No se encontró {file_path}'))
                 continue
 
-            # Verificar que el pixel no exista ya (unique_together x,y)
-            if Pixel.objects.filter(x=x, y=y).exists():
-                self.stdout.write(
-                    self.style.WARNING(f'  [SKIP] Ya existe un pixel en ({x}, {y}), se omite {filename}')
-                )
-                continue
-
-            if dry_run:
-                self.stdout.write(f'  [DRY-RUN] Crearía pixel ({x}, {y}) con {filename}')
-                continue
-
             with open(file_path, 'rb') as f:
                 pixel = Pixel(
                     x=x,
                     y=y,
-                    owner=None,  # pixel fundacional, sin usuario asociado
+                    owner=None,
                     owner_name=owner_name,
                     owner_email=owner_email,
                     owner_message='',
@@ -127,13 +153,10 @@ class Command(BaseCommand):
 
             created_count += 1
             self.stdout.write(
-                self.style.SUCCESS(f'  -> Creado pixel ({x}, {y}) código {pixel.display_code}')
+                self.style.SUCCESS(f'  -> Creado pixel ({x}, {y}) código {pixel.display_code} con {filename}')
             )
 
-        if not dry_run:
-            if created_count > 0:
-                GridManager.invalidate_cache()
-                self.stdout.write(self.style.SUCCESS('Caché de grid_status invalidado'))
-            self.stdout.write(self.style.SUCCESS(f'\n=== Listo: {created_count} pixeles creados ==='))
-        else:
-            self.stdout.write(self.style.WARNING('\n=== Dry-run finalizado, nada fue guardado ==='))
+        # 5. Invalidar caché de nuevo (por si quedó algo cacheado durante el proceso)
+        GridManager.invalidate_cache()
+
+        self.stdout.write(self.style.SUCCESS(f'\n=== Listo: {created_count} pixeles creados desde cero ==='))
