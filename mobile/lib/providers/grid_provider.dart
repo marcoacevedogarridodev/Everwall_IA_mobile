@@ -4,6 +4,8 @@ import '../models/pixel_model.dart';
 import '../services/offline_service.dart';
 import '../services/pixel_service.dart';
 
+import '../services/analytics_service.dart';
+
 /// Tamaño de "chunk" (en celdas) usado para trackear qué regiones ya se
 /// cargaron y evitar refetch al pasar por la misma zona dos veces.
 const int _kChunkSize = 16;
@@ -19,6 +21,11 @@ class GridProvider extends ChangeNotifier {
 
   /// Chunks ya solicitados (key = "chunkX,chunkY") para no repetir requests.
   final Set<String> _loadedChunks = {};
+
+  final Set<String> _viewedThisSession = {};
+
+  bool hasViewedThisSession(String pixelId) =>
+      _viewedThisSession.contains(pixelId);
 
   bool _isLoading = false;
   bool _isOffline = false;
@@ -103,9 +110,11 @@ class GridProvider extends ChangeNotifier {
       final xs = missingChunks.map((k) => int.parse(k.split(',')[0]));
       final ys = missingChunks.map((k) => int.parse(k.split(',')[1]));
       final fetchXMin = xs.reduce((a, b) => a < b ? a : b) * _kChunkSize;
-      final fetchXMax = (xs.reduce((a, b) => a > b ? a : b) + 1) * _kChunkSize - 1;
+      final fetchXMax =
+          (xs.reduce((a, b) => a > b ? a : b) + 1) * _kChunkSize - 1;
       final fetchYMin = ys.reduce((a, b) => a < b ? a : b) * _kChunkSize;
-      final fetchYMax = (ys.reduce((a, b) => a > b ? a : b) + 1) * _kChunkSize - 1;
+      final fetchYMax =
+          (ys.reduce((a, b) => a > b ? a : b) + 1) * _kChunkSize - 1;
 
       final result = await _pixelService.getGridStatus(
         xMin: fetchXMin,
@@ -163,10 +172,75 @@ class GridProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> registerPixelView(PixelModel pixel) async {
+    if (_viewedThisSession.contains(pixel.id)) return;
+    _viewedThisSession.add(pixel.id);
+
+    final current = _pixels[pixel.positionKey];
+    if (current != null) {
+      _pixels[pixel.positionKey] =
+          current.copyWith(viewsCount: current.viewsCount + 1);
+      notifyListeners();
+    }
+
+    try {
+      final realCount = await _pixelService.registerView(pixel.id);
+      final updated = _pixels[pixel.positionKey];
+      if (updated != null) {
+        _pixels[pixel.positionKey] = updated.copyWith(viewsCount: realCount);
+        notifyListeners();
+      }
+    } catch (_) {
+      // Endpoint aún no existe en el backend real — se mantiene el
+      // conteo local optimista.
+    }
+  }
+
+  /// 2do tap en adelante sobre la misma celda, misma sesión: toggle de
+  /// like directo desde el grid (mismo patrón optimista + rollback que
+  /// PixelProvider.toggleLikeOptimistic / PixelDetailScreen._toggleLike).
+  Future<void> toggleLikeFromGrid(PixelModel pixel) async {
+    final key = pixel.positionKey;
+    final current = _pixels[key] ?? pixel;
+    final optimisticLiked = !current.isLikedByMe;
+    final previous = current;
+
+    _pixels[key] = current.copyWith(
+      isLikedByMe: optimisticLiked,
+      likesCount: current.likesCount + (optimisticLiked ? 1 : -1),
+    );
+    notifyListeners();
+
+    if (optimisticLiked) {
+      AnalyticsService.instance.logLikeGiven(pixel.id);
+    }
+
+    if (!await OfflineService.instance.hasConnection) {
+      await OfflineService.instance.queueLikeAction(pixel.id);
+      return;
+    }
+
+    try {
+      final result = await _pixelService.toggleLike(pixel.id);
+      final updated = _pixels[key];
+      if (updated != null) {
+        _pixels[key] = updated.copyWith(
+          isLikedByMe: result.isLiked,
+          likesCount: result.likesCount,
+        );
+        notifyListeners();
+      }
+    } catch (_) {
+      _pixels[key] = previous;
+      notifyListeners();
+    }
+  }
+
   /// Limpia todo (útil en logout o pull-to-refresh completo).
   void reset() {
     _pixels.clear();
     _loadedChunks.clear();
+    _viewedThisSession.clear();
     _error = null;
     _isOffline = false;
     notifyListeners();

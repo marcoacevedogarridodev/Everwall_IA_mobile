@@ -9,8 +9,10 @@ import 'package:shimmer/shimmer.dart';
 ///
 /// - `pixel == null`: celda vacía/disponible (fondo surface + ícono "+").
 /// - `pixel != null`: imagen del píxel + indicadores 🔥 (>50 likes,
-///   esquina superior derecha) y ❤️ (liked by me, esquina inferior
-///   izquierda) según spec sección 3.1.
+///   esquina superior derecha), corazón de like (esquina inferior
+///   izquierda — SIEMPRE visible: outline si no le he dado like, relleno
+///   rojo si sí) y contador de vistas (esquina inferior derecha) según
+///   spec sección 3.1.
 class PixelCardWidget extends StatelessWidget {
   final PixelModel? pixel;
   final double size;
@@ -49,14 +51,28 @@ class PixelCardWidget extends StatelessWidget {
           const Positioned(
             top: 3,
             right: 3,
-            child: _PulsingIcon(icon: Icons.local_fire_department,
-                color: AppColors.fire),
+            child: _PulsingIcon(
+                icon: Icons.local_fire_department, color: AppColors.fire),
           ),
-        if (pixel!.isLikedByMe)
-          const Positioned(
+        // Corazón SIEMPRE visible: outline/transparente si no le he dado
+        // like, relleno rojo si ya se lo di.
+        Positioned(
+          bottom: 3,
+          left: 3,
+          child: Icon(
+            pixel!.isLikedByMe ? Icons.favorite : Icons.favorite_border,
+            color: pixel!.isLikedByMe
+                ? AppColors.like
+                : Colors.white.withValues(alpha: 0.65),
+            size: 20,
+          ),
+        ),
+        // Contador de vistas.
+        if (pixel!.viewsCount > 0)
+          Positioned(
             bottom: 3,
-            left: 3,
-            child: Icon(Icons.favorite, color: AppColors.like, size: 20),
+            right: 3,
+            child: _ViewsBadge(count: pixel!.viewsCount),
           ),
       ],
     );
@@ -110,6 +126,42 @@ class _PulsingIconState extends State<_PulsingIcon>
     return FadeTransition(
       opacity: Tween<double>(begin: 0.5, end: 1.0).animate(_controller),
       child: Icon(widget.icon, color: widget.color, size: 20),
+    );
+  }
+}
+
+/// Pill pequeño con ícono de ojo + número de vistas, esquina inferior
+/// derecha de la celda (spec: "contador de cuántas personas la han visto").
+class _ViewsBadge extends StatelessWidget {
+  final int count;
+  const _ViewsBadge({required this.count});
+
+  String get _formatted {
+    if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
+    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
+    return '$count';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.remove_red_eye_outlined,
+              size: 10, color: Colors.white),
+          const SizedBox(width: 3),
+          Text(
+            _formatted,
+            style: const TextStyle(color: Colors.white, fontSize: 10),
+          ),
+        ],
+      ),
     );
   }
 }

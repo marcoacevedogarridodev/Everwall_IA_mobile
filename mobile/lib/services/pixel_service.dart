@@ -28,21 +28,21 @@ class PixelService {
   final _api = ApiService.instance;
 
   Future<List<PixelModel>> getGridStatus({
-  required int xMin,
-  required int xMax,
-  required int yMin,
-  required int yMax,
-}) async {
-  final data = await _api.get('/pixels/grid_status/', query: {
-    'x_min': xMin,
-    'x_max': xMax,
-    'y_min': yMin,
-    'y_max': yMax,
-  });
+    required int xMin,
+    required int xMax,
+    required int yMin,
+    required int yMax,
+  }) async {
+    final data = await _api.get('/pixels/grid_status/', query: {
+      'x_min': xMin,
+      'x_max': xMax,
+      'y_min': yMin,
+      'y_max': yMax,
+    });
 
-  final list = _extractOccupiedPositions(data);
-  return list.map((e) => PixelModel.fromJson(e)).toList();
-}
+    final list = _extractOccupiedPositions(data);
+    return list.map((e) => PixelModel.fromJson(e)).toList();
+  }
 
   Future<List<PixelModel>> getRecentPixels() async {
     final data = await _api.get('/pixels/recent_pixels/');
@@ -102,10 +102,11 @@ class PixelService {
       );
     }
 
-    final data =
-        await _api.multipart('/pixels/edit_pixel_content/', FormData.fromMap(map));
+    final data = await _api.multipart(
+        '/pixels/edit_pixel_content/', FormData.fromMap(map));
     final pixelJson =
-        (data as Map<String, dynamic>)['pixel'] as Map<String, dynamic>? ?? data;
+        (data as Map<String, dynamic>)['pixel'] as Map<String, dynamic>? ??
+            data;
     return PixelModel.fromJson(pixelJson);
   }
 
@@ -136,6 +137,13 @@ class PixelService {
     );
   }
 
+  Future<int> registerView(String pixelId) async {
+    final data = await _api.post('/pixels/register_view/', data: {
+      'pixel_id': pixelId,
+    }) as Map<String, dynamic>;
+    return (data['views_count'] as num?)?.toInt() ?? 0;
+  }
+
   /// GET /pixels/share_pixel/ — lista de conversaciones del usuario
   /// (spec sección 6, Messages Screen). Ver nota de formato asumido en
   /// message_model.dart / PENDING_BACKEND_ENDPOINTS.md.
@@ -147,8 +155,10 @@ class PixelService {
 
   /// GET /pixels/share_pixel/?pixel_id=X — mensajes de una conversación
   /// puntual (Pixel Chat Detail).
-  Future<List<MessageModel>> getMessages(String pixelId, {String? currentUserId}) async {
-    final data = await _api.get('/pixels/share_pixel/', query: {'pixel_id': pixelId});
+  Future<List<MessageModel>> getMessages(String pixelId,
+      {String? currentUserId}) async {
+    final data =
+        await _api.get('/pixels/share_pixel/', query: {'pixel_id': pixelId});
     final list = _extractList(data);
     return list
         .map((e) => MessageModel.fromJson(e, currentUserId: currentUserId))
@@ -176,8 +186,10 @@ class PixelService {
   /// GET /pixels/pixel_comments/?pixel_id=X — endpoint PROPUESTO (spec
   /// sección 9.2, comentarios públicos). Ver comment_model.dart y
   /// PENDING_BACKEND_ENDPOINTS.md para el contrato completo.
-  Future<List<CommentModel>> getComments(String pixelId, {String? currentUserId}) async {
-    final data = await _api.get('/pixels/pixel_comments/', query: {'pixel_id': pixelId});
+  Future<List<CommentModel>> getComments(String pixelId,
+      {String? currentUserId}) async {
+    final data =
+        await _api.get('/pixels/pixel_comments/', query: {'pixel_id': pixelId});
     final list = _extractList(data);
     return list
         .map((e) => CommentModel.fromJson(e, currentUserId: currentUserId))
@@ -206,8 +218,10 @@ class PixelService {
   List<Map<String, dynamic>> _extractOccupiedPositions(dynamic data) {
     if (data is Map<String, dynamic>) {
       final inner = data['data'];
-      if (inner is Map<String, dynamic> && inner['occupied_positions'] is List) {
-        return (inner['occupied_positions'] as List).cast<Map<String, dynamic>>();
+      if (inner is Map<String, dynamic> &&
+          inner['occupied_positions'] is List) {
+        return (inner['occupied_positions'] as List)
+            .cast<Map<String, dynamic>>();
       }
     }
     return _extractList(data); // fallback por si el formato cambia

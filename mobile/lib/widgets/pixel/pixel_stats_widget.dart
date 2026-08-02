@@ -4,8 +4,8 @@ import '../../theme/colors.dart';
 import '../../theme/text_styles.dart';
 import '../../utils/formatters.dart';
 
-/// Fila de estadísticas del píxel (posición, likes, comentarios, fecha de
-/// compra), usada en Pixel Detail Screen.
+/// Fila de estadísticas del píxel (posición, likes, vistas, comentarios,
+/// fecha de compra), usada en Pixel Detail Screen.
 class PixelStatsWidget extends StatelessWidget {
   final PixelModel pixel;
   const PixelStatsWidget({super.key, required this.pixel});
@@ -33,6 +33,12 @@ class PixelStatsWidget extends StatelessWidget {
             label: 'Likes',
             value: '${pixel.likesCount}',
             valueColor: pixel.isOnFire ? AppColors.fire : null,
+          ),
+          _divider(),
+          _Stat(
+            icon: Icons.remove_red_eye_outlined,
+            label: 'Vistas',
+            value: '${pixel.viewsCount}',
           ),
           _divider(),
           _Stat(

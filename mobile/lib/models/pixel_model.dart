@@ -1,8 +1,3 @@
-/// Modelo de un píxel comprado en la grilla.
-///
-/// NOTA: como con UserModel, el parsing asume nombres de campo típicos
-/// de DRF (snake_case). Si `GET /pixels/grid_status/` devuelve otro
-/// formato, este es el único lugar que hay que ajustar.
 class PixelModel {
   final String id;
   final int x;
@@ -14,6 +9,7 @@ class PixelModel {
   final bool isLikedByMe;
   final int commentsCount;
   final bool isOwner;
+  final int viewsCount; // NUEVO
   final DateTime? createdAt;
 
   const PixelModel({
@@ -27,6 +23,7 @@ class PixelModel {
     this.isLikedByMe = false,
     this.commentsCount = 0,
     this.isOwner = false,
+    this.viewsCount = 0, // NUEVO
     this.createdAt,
   });
 
@@ -41,9 +38,7 @@ class PixelModel {
       id: (json['id'] ?? json['pk'] ?? '').toString(),
       x: (json['x'] as num?)?.toInt() ?? 0,
       y: (json['y'] as num?)?.toInt() ?? 0,
-      imageUrl: json['image_url'] as String? ??
-          json['image'] as String? ??
-          '',
+      imageUrl: json['image_url'] as String? ?? json['image'] as String? ?? '',
       ownerName: json['owner_name'] as String? ?? '',
       ownerMessage: json['owner_message'] as String? ?? '',
       likesCount: (json['likes_count'] as num?)?.toInt() ?? 0,
@@ -51,14 +46,14 @@ class PixelModel {
           json['is_liked_by_me'] as bool? ?? json['is_liked'] as bool? ?? false,
       commentsCount: (json['comments_count'] as num?)?.toInt() ?? 0,
       isOwner: json['is_owner'] as bool? ?? false,
+      // Endpoint propuesto register_view/ — ver PENDING_BACKEND_ENDPOINTS.md
+      viewsCount: (json['views_count'] as num?)?.toInt() ?? 0, // NUEVO
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
           : null,
     );
   }
 
-  /// Usado por OfflineService (Sprint 9) para cachear la grilla en Hive.
-  /// Espejo de fromJson — si agregas un campo allá, agrégalo acá también.
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -71,6 +66,7 @@ class PixelModel {
       'is_liked': isLikedByMe,
       'comments_count': commentsCount,
       'is_owner': isOwner,
+      'views_count': viewsCount, // NUEVO
       'created_at': createdAt?.toIso8601String(),
     };
   }
@@ -79,6 +75,7 @@ class PixelModel {
     int? likesCount,
     bool? isLikedByMe,
     int? commentsCount,
+    int? viewsCount, // NUEVO
   }) {
     return PixelModel(
       id: id,
@@ -91,10 +88,11 @@ class PixelModel {
       isLikedByMe: isLikedByMe ?? this.isLikedByMe,
       commentsCount: commentsCount ?? this.commentsCount,
       isOwner: isOwner,
+      viewsCount: viewsCount ?? this.viewsCount, // NUEVO
       createdAt: createdAt,
     );
   }
-  
+
   PixelModel copyWithImageUrl(String newImageUrl) {
     return PixelModel(
       id: id,
@@ -107,9 +105,8 @@ class PixelModel {
       isLikedByMe: isLikedByMe,
       commentsCount: commentsCount,
       isOwner: isOwner,
+      viewsCount: viewsCount, // NUEVO
       createdAt: createdAt,
     );
   }
 }
-
-

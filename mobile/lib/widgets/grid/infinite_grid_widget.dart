@@ -21,6 +21,14 @@ import 'rotating_pixel_card_widget.dart';
 /// va en cada celda. Al ser una permutación (biyección) de un mismo
 /// conjunto, es matemáticamente imposible que dos celdas muestren la
 /// misma imagen a la vez, y con el tiempo todas van rotando de posición.
+///
+/// Interacción táctil (upgrade "corazón + vistas"):
+///   - 1er tap sobre una celda (por sesión de app) -> registra una vista
+///     (`GridProvider.registerPixelView`) y abre Pixel Detail Screen.
+///   - 2do tap en adelante sobre esa misma celda, misma sesión -> en vez
+///     de navegar, hace toggle de like directo desde el grid
+///     (`GridProvider.toggleLikeFromGrid`), sin salir de la pantalla.
+///   - Long-press sigue abriendo el overlay rápido, sin cambios.
 class InfiniteGridWidget extends StatefulWidget {
   const InfiniteGridWidget({super.key});
 
@@ -138,6 +146,19 @@ class _InfiniteGridWidgetState extends State<InfiniteGridWidget> {
     Navigator.of(context).pushNamed(AppRoutes.pixelPurchase);
   }
 
+  /// Maneja el tap sobre una celda con píxel: 1er tap del session ->
+  /// registra vista y navega a detalle; 2do tap en adelante -> toggle de
+  /// like directo, sin navegar.
+  void _handlePixelTap(PixelModel pixel) {
+    final grid = context.read<GridProvider>();
+    if (grid.hasViewedThisSession(pixel.id)) {
+      grid.toggleLikeFromGrid(pixel);
+    } else {
+      grid.registerPixelView(pixel);
+      _openDetail(pixel);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -193,14 +214,25 @@ class _InfiniteGridWidgetState extends State<InfiniteGridWidget> {
                 // +1: slot final vacío = "comprar el siguiente píxel".
                 itemCount: gridSource.length + 1,
                 itemBuilder: (context, index) {
-                  final pixel =
+                  final basePixel =
                       index < gridSource.length ? gridSource[index] : null;
+
+                  // Siempre lee el estado más reciente del provider
+                  // (likes, vistas) — gridSource solo determina el ORDEN
+                  // de la rotación, no los datos actuales del píxel. Así
+                  // el corazón y el contador de vistas se actualizan al
+                  // instante tras un tap, sin esperar a que cambie el
+                  // conjunto de ids.
+                  final pixel = basePixel != null
+                      ? (gridProvider.pixels[basePixel.positionKey] ??
+                          basePixel)
+                      : null;
 
                   return RepaintBoundary(
                     child: GestureDetector(
                       onTap: () {
                         if (pixel != null) {
-                          _openDetail(pixel);
+                          _handlePixelTap(pixel);
                         } else {
                           _onBuyNextTap();
                         }
