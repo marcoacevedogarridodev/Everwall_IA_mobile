@@ -13,15 +13,12 @@ import '../../theme/text_styles.dart';
 import '../../widgets/auth/gradient_button.dart';
 import 'pixel_upload_screen.dart';
 
-/// Pixel Purchase Screen (spec 8.1, pasos 1-4).
+/// Pixel Purchase Screen (spec 8.1).
 ///
-/// Paso 1: selección de posición (x, y) sobre una mini-ventana de la grilla
-/// (reutiliza los datos ya cacheados en `GridProvider`).
-/// Paso 2 (delegado): `PixelUploadScreen` para elegir la imagen.
-/// Paso 3: formulario de owner_name / owner_message / currency, en esta
-/// misma screen una vez vuelve con la imagen.
-/// Paso 4: `POST /pixels/initiate_purchase/` → navega a
-/// `PixelPaymentScreen` con la sesión creada para completar el pago.
+/// Ya NO tiene paso de selección manual de posición: al tocar "+" en la
+/// grilla, se asigna automáticamente la primera coordenada libre y se abre
+/// de inmediato el selector de imagen (cámara/galería). El usuario ve un
+/// único flujo: "+" -> elegir imagen -> nombre/mensaje/moneda -> pago.
 class PixelPurchaseScreen extends StatefulWidget {
   final int? initialX;
   final int? initialY;
@@ -33,15 +30,11 @@ class PixelPurchaseScreen extends StatefulWidget {
 }
 
 class _PixelPurchaseScreenState extends State<PixelPurchaseScreen> {
-  static const int _windowSize = 6;
-
   late final TextEditingController _xController;
   late final TextEditingController _yController;
   late final TextEditingController _ownerNameController;
   final _ownerMessageController = TextEditingController();
 
-  int _windowBaseX = 0;
-  int _windowBaseY = 0;
   String _currency = AppConstants.supportedCurrencies.first;
   File? _selectedImage;
   bool _showDetailsStep = false;
@@ -57,9 +50,7 @@ class _PixelPurchaseScreenState extends State<PixelPurchaseScreen> {
     _ownerNameController = TextEditingController(
       text: context.read<AuthProvider>().user?.fullName ?? '',
     );
-    _windowBaseX = x - (_windowSize ~/ 2);
-    _windowBaseY = y - (_windowSize ~/ 2);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _searchZone());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startFlow());
   }
 
   @override
@@ -71,56 +62,52 @@ class _PixelPurchaseScreenState extends State<PixelPurchaseScreen> {
     super.dispose();
   }
 
-  void _searchZone() {
-    final x = int.tryParse(_xController.text) ?? 0;
-    final y = int.tryParse(_yController.text) ?? 0;
-    setState(() {
-      _windowBaseX = x - (_windowSize ~/ 2);
-      _windowBaseY = y - (_windowSize ~/ 2);
-    });
-    context.read<GridProvider>().requestViewport(
-          xMin: _windowBaseX,
-          xMax: _windowBaseX + _windowSize - 1,
-          yMin: _windowBaseY,
-          yMax: _windowBaseY + _windowSize - 1,
-        );
+  /// Arranca el flujo apenas se abre la pantalla: asigna posición
+  /// automáticamente (si no vino una explícita) y abre el selector de
+  /// imagen de inmediato — sin mostrar ningún paso intermedio de
+  /// selección de coordenadas.
+  Future<void> _startFlow() async {
+    if (widget.initialX == null || widget.initialY == null) {
+      _assignAvailablePosition();
+    }
+    await _pickImageAndContinue();
   }
 
-  void _selectCell(int x, int y) {
-    setState(() {
-      _xController.text = '$x';
-      _yController.text = '$y';
-    });
+  /// Busca la primera celda libre (0,0 en adelante) usando el cache ya
+  /// cargado en GridProvider. Si el grid todavía no terminó de cargar o
+  /// está lleno, se queda en (0,0) — el backend valida igual al confirmar
+  /// la compra en `initiate_purchase`.
+  void _assignAvailablePosition() {
+    final grid = context.read<GridProvider>();
+    for (var y = 0; y < 100; y++) {
+      for (var x = 0; x < 100; x++) {
+        if (grid.pixelAt(x, y) == null) {
+          _xController.text = '$x';
+          _yController.text = '$y';
+          return;
+        }
+      }
+    }
   }
 
-  Future<void> _continueToImage() async {
-    final x = int.tryParse(_xController.text);
-    final y = int.tryParse(_yController.text);
-    if (x == null || y == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingresa una posición X, Y válida')),
-      );
-      return;
-    }
-
-    final occupied = context.read<GridProvider>().pixelAt(x, y) != null;
-    if (occupied) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Esa posición ya está ocupada, elige otra')),
-      );
-      return;
-    }
-
+  Future<void> _pickImageAndContinue() async {
     final image = await Navigator.of(context).push<File>(
       MaterialPageRoute(builder: (_) => const PixelUploadScreen()),
     );
 
-    if (image != null && mounted) {
-      setState(() {
-        _selectedImage = image;
-        _showDetailsStep = true;
-      });
+    if (!mounted) return;
+
+    if (image == null) {
+      // Canceló la selección de imagen — no hay paso previo al que
+      // volver, así que se cierra todo el flujo de compra.
+      Navigator.of(context).pop();
+      return;
     }
+
+    setState(() {
+      _selectedImage = image;
+      _showDetailsStep = true;
+    });
   }
 
   Future<void> _submitPurchase() async {
@@ -154,7 +141,8 @@ class _PixelPurchaseScreenState extends State<PixelPurchaseScreen> {
       );
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -164,122 +152,14 @@ class _PixelPurchaseScreenState extends State<PixelPurchaseScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(_showDetailsStep ? 'Detalles del píxel' : 'Elige tu posición'),
-        leading: _showDetailsStep
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => setState(() => _showDetailsStep = false),
-              )
-            : null,
-      ),
+      appBar: AppBar(title: const Text('Detalles de tu imagen')),
       body: SafeArea(
-        child: _showDetailsStep ? _buildDetailsStep() : _buildPositionStep(),
+        child: _showDetailsStep
+            ? _buildDetailsStep()
+            : const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
       ),
-    );
-  }
-
-  Widget _buildPositionStep() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'Toca una celda disponible o ingresa coordenadas manualmente.',
-            style: AppTextStyles.bodySecondary,
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _xController,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: const InputDecoration(labelText: 'X'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _yController,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: const InputDecoration(labelText: 'Y'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              IconButton.filled(
-                onPressed: _searchZone,
-                icon: const Icon(Icons.search),
-                style: IconButton.styleFrom(backgroundColor: AppColors.primary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _buildMiniGrid(),
-          const SizedBox(height: 8),
-          const Row(
-            children: [
-              _LegendDot(color: AppColors.surfaceLight, label: 'Disponible'),
-              SizedBox(width: 16),
-              _LegendDot(color: AppColors.surface, label: 'Ocupado'),
-              SizedBox(width: 16),
-              _LegendDot(color: AppColors.primary, label: 'Seleccionado'),
-            ],
-          ),
-          const SizedBox(height: 28),
-          GradientButton(label: 'Continuar', onPressed: _continueToImage),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMiniGrid() {
-    return Consumer<GridProvider>(
-      builder: (context, gridProvider, _) {
-        final selX = int.tryParse(_xController.text);
-        final selY = int.tryParse(_yController.text);
-
-        return AspectRatio(
-          aspectRatio: 1,
-          child: GridView.builder(
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: _windowSize,
-              mainAxisSpacing: 3,
-              crossAxisSpacing: 3,
-            ),
-            itemCount: _windowSize * _windowSize,
-            itemBuilder: (context, index) {
-              final x = _windowBaseX + (index % _windowSize);
-              final y = _windowBaseY + (index ~/ _windowSize);
-              final occupied = gridProvider.pixelAt(x, y) != null;
-              final isSelected = x == selX && y == selY;
-
-              return GestureDetector(
-                onTap: occupied ? null : () => _selectCell(x, y),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: occupied
-                        ? AppColors.surface
-                        : (isSelected ? AppColors.primary : AppColors.surfaceLight),
-                    borderRadius: BorderRadius.circular(6),
-                    border: isSelected
-                        ? Border.all(color: Colors.white, width: 2)
-                        : null,
-                  ),
-                  alignment: Alignment.center,
-                  child: occupied
-                      ? const Icon(Icons.block, size: 14, color: AppColors.textDisabled)
-                      : null,
-                ),
-              );
-            },
-          ),
-        );
-      },
     );
   }
 
@@ -313,7 +193,7 @@ class _PixelPurchaseScreenState extends State<PixelPurchaseScreen> {
             onChanged: (_) => setState(() {}),
             style: const TextStyle(color: AppColors.textPrimary),
             decoration: InputDecoration(
-              labelText: 'Mensaje (opcional)',
+              labelText: 'Titulo para tu imagen (opcional)',
               counterText:
                   '$messageLength/${AppConstants.ownerMessageMaxLength}',
             ),
@@ -337,39 +217,9 @@ class _PixelPurchaseScreenState extends State<PixelPurchaseScreen> {
           ),
           if (AppConfig.isDev) ...[
             const SizedBox(height: 12),
-            Text(
-              'Posición ($x, $y) — POST /pixels/initiate_purchase/',
-              style: AppTextStyles.caption,
-              textAlign: TextAlign.center,
-            ),
           ],
         ],
       ),
-    );
-  }
-
-  String get x => _xController.text;
-  String get y => _yController.text;
-}
-
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  final String label;
-  const _LegendDot({required this.color, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        Text(label, style: AppTextStyles.caption),
-      ],
     );
   }
 }
