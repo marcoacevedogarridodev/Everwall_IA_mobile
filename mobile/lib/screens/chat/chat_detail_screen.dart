@@ -102,8 +102,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     return const LoadingWidget();
                   case ChatThreadStatus.error:
                     return AppErrorWidget(
-                      message:
-                          chat.threadError ?? 'No se pudieron cargar los mensajes',
+                      message: chat.threadError ??
+                          'No se pudieron cargar los mensajes',
                       onRetry: () => chat.openChat(widget.chat.pixelId),
                     );
                   case ChatThreadStatus.loaded:
@@ -146,7 +146,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               children: [
                 Switch(
                   value: _sendPrivately,
-                  activeThumbColor: AppColors.primary,
+                  activeThumbColor: Colors.white,
                   onChanged: (v) => setState(() => _sendPrivately = v),
                 ),
                 Text(
@@ -180,7 +180,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 const SizedBox(width: 8),
                 IconButton.filled(
                   onPressed: isSending ? null : _send,
-                  style: IconButton.styleFrom(backgroundColor: AppColors.primary),
+                  style: IconButton.styleFrom(backgroundColor: Colors.white),
                   icon: isSending
                       ? const SizedBox(
                           width: 18,
@@ -218,7 +218,7 @@ class _MessageBubble extends StatelessWidget {
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: isMine ? AppColors.primary : AppColors.surface,
+          color: isMine ? Colors.white : AppColors.surface,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -236,7 +236,7 @@ class _MessageBubble extends StatelessWidget {
                 child: Text(
                   message.senderName,
                   style: AppTextStyles.caption.copyWith(
-                    color: AppColors.primary,
+                    color: Colors.white,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

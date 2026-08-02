@@ -1,27 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../config/routes.dart';
-import '../../models/message_model.dart';
-import '../../models/pixel_model.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../providers/grid_provider.dart';
 import '../../services/analytics_service.dart';
 import '../../services/offline_service.dart';
 import '../../services/pixel_service.dart';
+import '../../models/pixel_model.dart';
 import '../../theme/colors.dart';
 import '../../theme/text_styles.dart';
-import '../../widgets/pixel/pixel_actions_widget.dart';
+import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/pixel/pixel_comments_widget.dart';
 import '../../widgets/pixel/pixel_image_widget.dart';
-import '../../widgets/pixel/pixel_stats_widget.dart';
 
-/// Pixel Detail Screen (spec sección 3.2 / navegación por tap normal):
-/// imagen con zoom, owner, mensaje, stats, acciones y comentarios.
-///
-/// Recibe el `PixelModel` completo como argumento de ruta (evita un round
-/// trip extra a la API ya que el grid/overlay ya lo tienen cargado).
-/// Mantiene una copia local mutable para reflejar el like al instante y
-/// sincroniza el cambio de vuelta a `GridProvider` para que el grid quede
-/// consistente al volver atrás.
+/// Pixel Detail Screen: imagen con zoom, overlay de dueño + acciones
+/// (like, vistas, compartir) sobre la imagen, y comentarios.
 class PixelDetailScreen extends StatefulWidget {
   final PixelModel pixel;
   const PixelDetailScreen({super.key, required this.pixel});
@@ -39,10 +31,6 @@ class _PixelDetailScreenState extends State<PixelDetailScreen> {
     AnalyticsService.instance.logPixelView(_pixel.id);
   }
 
-  /// Optimista contra `POST /pixels/toggle_like/` (endpoint PROPUESTO, ver
-  /// PENDING_BACKEND_ENDPOINTS.md). Revierte si la request falla por algo
-  /// que no sea falta de conexión (Sprint 9: si no hay señal, se encola en
-  /// vez de intentar y revertir — ver OfflineService).
   Future<void> _toggleLike() async {
     final liked = !_pixel.isLikedByMe;
     final previous = _pixel;
@@ -85,65 +73,28 @@ class _PixelDetailScreenState extends State<PixelDetailScreen> {
     }
   }
 
+  void _share() {
+    Share.share(
+      '¡Mira este píxel de ${_pixel.ownerName} en EverWall! '
+      'pixelapp://pixel/${_pixel.id}',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: Text('Píxel (${_pixel.x}, ${_pixel.y})')),
+      appBar: const CustomAppBar(showLogo: true),
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          PixelImageWidget(imageUrl: _pixel.imageUrl),
+          _buildImageWithOverlay(),
           Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundColor: AppColors.surfaceLight,
-                      child: Text(
-                        _pixel.ownerName.isNotEmpty
-                            ? _pixel.ownerName[0].toUpperCase()
-                            : '?',
-                        style: AppTextStyles.body,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(_pixel.ownerName, style: AppTextStyles.title),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
                 Text(_pixel.ownerMessage, style: AppTextStyles.body),
-                const SizedBox(height: 18),
-                PixelActionsWidget(
-                  pixel: _pixel,
-                  onLikeToggle: _toggleLike,
-                  onMessage: () => Navigator.of(context).pushNamed(
-                    AppRoutes.chatDetail,
-                    arguments: ChatSummaryModel(
-                      pixelId: _pixel.id,
-                      pixelImageUrl: _pixel.imageUrl,
-                      pixelOwnerName: _pixel.ownerName,
-                      lastMessage: '',
-                    ),
-                  ),
-                  onEdit: () async {
-                    final updated = await Navigator.of(context).pushNamed(
-                      AppRoutes.pixelEdit,
-                      arguments: _pixel,
-                    );
-                    if (updated is PixelModel && mounted) {
-                      setState(() => _pixel = updated);
-                    }
-                  },
-                ),
-                const SizedBox(height: 18),
-                PixelStatsWidget(pixel: _pixel),
                 const SizedBox(height: 24),
                 PixelCommentsWidget(pixel: _pixel),
                 const SizedBox(height: 24),
@@ -151,6 +102,148 @@ class _PixelDetailScreenState extends State<PixelDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildImageWithOverlay() {
+    return Stack(
+      children: [
+        AspectRatio(
+          aspectRatio: 1,
+          child: PixelImageWidget(imageUrl: _pixel.imageUrl),
+        ),
+        // Degradado inferior para que el texto/íconos se lean bien
+        // sobre cualquier imagen.
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: IgnorePointer(
+            child: Container(
+              height: 90,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.65),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 14,
+          right: 14,
+          bottom: 12,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Nombre del dueño — costado izquierdo.
+              Expanded(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 14,
+                      backgroundColor: AppColors.surfaceLight,
+                      child: Text(
+                        _pixel.ownerName.isNotEmpty
+                            ? _pixel.ownerName[0].toUpperCase()
+                            : '?',
+                        style:
+                            const TextStyle(fontSize: 12, color: Colors.white),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        _pixel.ownerName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Like + vistas + compartir — costado derecho.
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _ImageStatIcon(
+                    icon: _pixel.isLikedByMe
+                        ? Icons.favorite
+                        : Icons.favorite_border,
+                    label: '${_pixel.likesCount}',
+                    color: _pixel.isLikedByMe ? AppColors.like : Colors.white,
+                    onTap: _toggleLike,
+                  ),
+                  const SizedBox(width: 14),
+                  _ImageStatIcon(
+                    icon: Icons.remove_red_eye_outlined,
+                    label: '${_pixel.viewsCount}',
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 14),
+                  _ImageStatIcon(
+                    icon: Icons.share_outlined,
+                    color: Colors.white,
+                    onTap: _share,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ImageStatIcon extends StatelessWidget {
+  final IconData icon;
+  final String? label;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _ImageStatIcon({
+    required this.icon,
+    required this.color,
+    this.label,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 20),
+            if (label != null) ...[
+              const SizedBox(width: 4),
+              Text(
+                label!,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
